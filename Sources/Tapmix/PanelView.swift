@@ -280,6 +280,10 @@ struct PanelView: View {
                 .foregroundStyle(.tertiary)
             Spacer()
             Menu {
+                Button("Check for Updates…") {
+                    UpdateChecker.shared.check()
+                }
+                Divider()
                 Toggle("Launch at login", isOn: Binding(
                     get: { loginItem.isEnabled },
                     set: { loginItem.setEnabled($0) }
