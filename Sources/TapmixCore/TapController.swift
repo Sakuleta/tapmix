@@ -43,6 +43,8 @@ final class TapController: TapControlling {
     private var ioProcID: AudioDeviceIOProcID?
     private var ramp: Float = 0.002
     private var limiter: LookaheadLimiter?
+    private var eqProcessor: EQProcessor?
+    private var pendingEQ = EQSettings()
 
     // Realtime gain state. Aligned Float reads/writes are atomic on Apple silicon.
     private var targetGain: Float = 1
@@ -60,6 +62,11 @@ final class TapController: TapControlling {
 
     func setGain(_ gain: Float) {
         targetGain = AudioMath.clampedGain(gain)
+    }
+
+    func setEQ(_ settings: EQSettings) {
+        pendingEQ = settings
+        eqProcessor?.update(settings)
     }
 
     func takePeakLevel() -> Float {
@@ -125,6 +132,9 @@ final class TapController: TapControlling {
         let sampleRate = nominalSampleRate(newAggregateID)
         ramp = AudioMath.rampCoefficient(sampleRate: sampleRate)
         limiter = LookaheadLimiter(sampleRate: sampleRate)
+        let eq = EQProcessor(sampleRate: sampleRate)
+        eq.update(pendingEQ)
+        eqProcessor = eq
         var newProcID: AudioDeviceIOProcID?
         status = AudioDeviceCreateIOProcIDWithBlock(&newProcID, newAggregateID, queue) { [weak self] _, input, _, output, _ in
             guard let self else {
@@ -209,6 +219,7 @@ final class TapController: TapControlling {
             targetGain: targetGain,
             currentGain: &currentGain,
             rampCoefficient: ramp,
+            eq: eqProcessor,
             limiter: limiter
         )
         peakLevel = max(peakLevel, peak)

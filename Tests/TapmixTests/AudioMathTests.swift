@@ -32,5 +32,16 @@ final class AudioMathTests: XCTestCase {
         XCTAssertEqual(level.volume, 0.6, accuracy: 0.0001)
         XCTAssertEqual(level.boost, 1, accuracy: 0.0001)
         XCTAssertEqual(level.gain, 0.6, accuracy: 0.0001)
+        XCTAssertFalse(level.eq.enabled)
+        XCTAssertEqual(level.eq.gains, [Float](repeating: 0, count: 10))
+    }
+
+    func testEQPresetIsNormalizedAndPersisted() throws {
+        let level = AppLevel(eq: EQPreset.bass.settings)
+        let data = try JSONEncoder().encode(level)
+        let decoded = try JSONDecoder().decode(AppLevel.self, from: data)
+        XCTAssertTrue(decoded.eq.enabled)
+        XCTAssertEqual(decoded.eq.gains.count, 10)
+        XCTAssertEqual(decoded.eq.gains.first ?? 0, 7, accuracy: 0.0001)
     }
 }

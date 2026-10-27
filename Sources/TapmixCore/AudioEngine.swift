@@ -99,6 +99,14 @@ public final class AudioEngine: ObservableObject {
         refresh()
     }
 
+    public func setEQ(_ bundleID: String, _ settings: EQSettings) {
+        var level = store.level(for: bundleID)
+        level.eq = settings
+        store.set(level, for: bundleID)
+        tapManager.setEQ(settings, for: bundleID)
+        updateRow(bundleID, eq: settings)
+    }
+
     public func setBoost(_ bundleID: String, _ boost: Float) {
         var level = store.level(for: bundleID)
         level.boost = min(max(boost, 1), 4)
@@ -239,7 +247,8 @@ public final class AudioEngine: ObservableObject {
         _ bundleID: String,
         volume: Float? = nil,
         muted: Bool? = nil,
-        boost: Float? = nil
+        boost: Float? = nil,
+        eq: EQSettings? = nil
     ) {
         guard let index = apps.firstIndex(where: { $0.bundleID == bundleID }) else { return }
         if let volume {
@@ -250,6 +259,9 @@ public final class AudioEngine: ObservableObject {
         }
         if let boost {
             apps[index].boost = boost
+        }
+        if let eq {
+            apps[index].eq = eq
         }
     }
 }
