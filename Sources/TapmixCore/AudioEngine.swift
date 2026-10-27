@@ -22,7 +22,11 @@ public final class AudioEngine: ObservableObject {
 
     /// Set by the panel while the output slider is being dragged so polling does not fight it.
     public var isEditingOutputVolume = false
+    /// The meters only matter while the panel is on screen; publishing a level
+    /// ten times a second behind a closed panel is pure battery.
+    private var panelVisible = false
 
+    private let icons = IconCache()
     private let store: LevelStore
     private let preferences: AppPreferences
     private let sceneStore: SceneStore
@@ -296,6 +300,10 @@ public final class AudioEngine: ObservableObject {
         refresh()
     }
 
+    public func setPanelVisible(_ visible: Bool) {
+        panelVisible = visible
+    }
+
     public func setDuckingEnabled(_ enabled: Bool) {
         duckingEnabled = enabled
         UserDefaults.standard.set(enabled, forKey: Self.duckingKey)
@@ -461,7 +469,7 @@ public final class AudioEngine: ObservableObject {
     }
 
     private func tickMeters() {
-        guard started, !apps.isEmpty else { return }
+        guard started, panelVisible, !apps.isEmpty else { return }
         for index in apps.indices {
             let peak = tapManager.peakLevel(for: apps[index].bundleID)
             let previous = apps[index].level
@@ -500,7 +508,10 @@ public final class AudioEngine: ObservableObject {
         if processList != nil {
             syncProcessListeners(processes.map(\.objectID))
         }
-        let running = RunningAppDescriptor.snapshot(NSWorkspace.shared.runningApplications)
+        let running = RunningAppDescriptor.snapshot(
+            NSWorkspace.shared.runningApplications,
+            icon: icons.icon(for:)
+        )
         let devices = AudioSystem.outputDevices()
         if devices != outputDevices {
             outputDevices = devices
@@ -541,17 +552,25 @@ public final class AudioEngine: ObservableObject {
 
         if processList != nil {
             let previousLevels = Dictionary(uniqueKeysWithValues: apps.map { ($0.bundleID, $0.level) })
-            apps = groups.map { group in
+            let rows = groups.map { group in
                 var row = group.row
                 row.level = previousLevels[group.bundleID] ?? 0
                 return row
             }
+            // Publishing an identical array would still invalidate the panel and
+            // rebuild rows behind a closed window; only publish real changes.
+            if rows != apps {
+                apps = rows
+            }
         }
         syncRecordingState()
-        hiddenApps = preferences.all
+        let hidden = preferences.all
             .filter { $0.value.ignored }
             .map { HiddenApp(bundleID: $0.key, name: $0.value.name ?? $0.key) }
             .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        if hidden != hiddenApps {
+            hiddenApps = hidden
+        }
 
         switch tapManager.health {
         case .ok:
@@ -597,5 +616,21 @@ public final class AudioEngine: ObservableObject {
         if let mono {
             apps[index].mono = mono
         }
+    }
+}
+
+/// Icons change only when an app is installed, updated or removed; caching by
+/// bundle ID keeps LaunchServices off the one-second refresh path.
+private final class IconCache {
+    private var icons: [String: NSImage] = [:]
+
+    func icon(for app: NSRunningApplication) -> NSImage? {
+        guard let bundleID = app.bundleIdentifier else { return app.icon }
+        if let cached = icons[bundleID] {
+            return cached
+        }
+        let image = app.icon
+        icons[bundleID] = image
+        return image
     }
 }
