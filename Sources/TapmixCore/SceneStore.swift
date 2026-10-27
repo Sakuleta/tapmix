@@ -21,17 +21,12 @@ public final class SceneStore {
     private static let key = "com.mardinli.tapmix.scenes"
     private static let limit = 20
 
-    private let defaults: UserDefaults
+    private let section: DefaultsSection<[MixScene]>
     public private(set) var scenes: [MixScene]
 
     public init(defaults: UserDefaults = .standard) {
-        self.defaults = defaults
-        if let data = defaults.data(forKey: Self.key),
-           let decoded = try? JSONDecoder().decode([MixScene].self, from: data) {
-            scenes = decoded
-        } else {
-            scenes = []
-        }
+        section = DefaultsSection(defaults: defaults, key: Self.key)
+        scenes = section.load(default: [])
     }
 
     public func save(name: String, levels: [String: AppLevel]) {
@@ -58,8 +53,6 @@ public final class SceneStore {
     }
 
     private func persist() {
-        if let data = try? JSONEncoder().encode(scenes) {
-            defaults.set(data, forKey: Self.key)
-        }
+        section.save(scenes)
     }
 }

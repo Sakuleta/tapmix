@@ -18,17 +18,12 @@ public final class EQPresetStore {
     private static let key = "com.mardinli.tapmix.eqPresets"
     private static let limit = 20
 
-    private let defaults: UserDefaults
+    private let section: DefaultsSection<[SavedEQPreset]>
     public private(set) var presets: [SavedEQPreset]
 
     public init(defaults: UserDefaults = .standard) {
-        self.defaults = defaults
-        if let data = defaults.data(forKey: Self.key),
-           let decoded = try? JSONDecoder().decode([SavedEQPreset].self, from: data) {
-            presets = decoded
-        } else {
-            presets = []
-        }
+        section = DefaultsSection(defaults: defaults, key: Self.key)
+        presets = section.load(default: [])
     }
 
     public func save(name: String, settings: EQSettings) {
@@ -54,8 +49,6 @@ public final class EQPresetStore {
     }
 
     private func persist() {
-        if let data = try? JSONEncoder().encode(presets) {
-            defaults.set(data, forKey: Self.key)
-        }
+        section.save(presets)
     }
 }

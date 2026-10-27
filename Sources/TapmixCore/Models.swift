@@ -77,17 +77,12 @@ public struct AppLevel: Codable, Equatable {
 public final class LevelStore {
     private static let key = "com.mardinli.tapmix.levels"
 
-    private let defaults: UserDefaults
+    private let section: DefaultsSection<[String: AppLevel]>
     private var levels: [String: AppLevel]
 
     public init(defaults: UserDefaults = .standard) {
-        self.defaults = defaults
-        if let data = defaults.data(forKey: Self.key),
-           let decoded = try? JSONDecoder().decode([String: AppLevel].self, from: data) {
-            levels = decoded
-        } else {
-            levels = [:]
-        }
+        section = DefaultsSection(defaults: defaults, key: Self.key)
+        levels = section.load(default: [:])
     }
 
     public func level(for bundleID: String) -> AppLevel {
@@ -96,9 +91,7 @@ public final class LevelStore {
 
     public func set(_ level: AppLevel, for bundleID: String) {
         levels[bundleID] = level
-        if let data = try? JSONEncoder().encode(levels) {
-            defaults.set(data, forKey: Self.key)
-        }
+        section.save(levels)
     }
 
     public func hasLevel(for bundleID: String) -> Bool {

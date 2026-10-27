@@ -17,17 +17,12 @@ public struct AppPreference: Codable, Equatable {
 public final class AppPreferences {
     private static let key = "com.mardinli.tapmix.preferences"
 
-    private let defaults: UserDefaults
+    private let section: DefaultsSection<[String: AppPreference]>
     private var preferences: [String: AppPreference]
 
     public init(defaults: UserDefaults = .standard) {
-        self.defaults = defaults
-        if let data = defaults.data(forKey: Self.key),
-           let decoded = try? JSONDecoder().decode([String: AppPreference].self, from: data) {
-            preferences = decoded
-        } else {
-            preferences = [:]
-        }
+        section = DefaultsSection(defaults: defaults, key: Self.key)
+        preferences = section.load(default: [:])
     }
 
     public func preference(for bundleID: String) -> AppPreference {
@@ -36,9 +31,7 @@ public final class AppPreferences {
 
     public func set(_ preference: AppPreference, for bundleID: String) {
         preferences[bundleID] = preference
-        if let data = try? JSONEncoder().encode(preferences) {
-            defaults.set(data, forKey: Self.key)
-        }
+        section.save(preferences)
     }
 
     public var all: [String: AppPreference] {
