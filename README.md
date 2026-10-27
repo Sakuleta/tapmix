@@ -25,6 +25,7 @@ no kernel extension, no virtual audio driver, and no proprietary code.
 - **Preferred output** — pin a device and Tapmix switches back to it when it
   reconnects
 - **Night mode** per app — lift quiet dialogue and tame loud peaks
+- **AutoEQ import** — load a `ParametricEQ.txt` headphone correction per app
 - **Pinned apps** stay visible while idle; **hide** an app to remove it from
   Tapmix entirely; **search** filters the list
 - **Output volume and mute** for the current default output device
@@ -113,6 +114,14 @@ build; do not disable SIP or modify system security settings.
 - A small HUD appears near the top of the screen with the app name and level.
 
 Hotkeys are fixed for now; they need no Accessibility permission.
+
+### AutoEQ
+
+In an app's sound popover choose **Import AutoEQ…** and pick a
+`ParametricEQ.txt` exported by AutoEQ or Equalizer APO. Up to 24 `PK`, `LSC`
+and `HSC` filters are applied on top of the 10 bands, stored per app, and kept
+even when the 10-band switch is off. **Clear** removes the import. The file's
+`Preamp` line is ignored; the limiter provides the headroom.
 
 ### Night mode
 
@@ -219,13 +228,15 @@ Tests/TapmixTests/
   output switch while the preferred device stays connected.
 - **Night mode is a compressor, not loudness matching.** Heavy use can pump;
   it is opt-in per app.
+- **AutoEQ import handles PK/LSC/HSC only.** Shelf Q is not used, and the
+  preamp gain is left to the limiter.
 - **Signing.** Ad-hoc signing is the fallback; TCC grants do not survive
   rebuilds without the stable identity described above.
 
 ## Roadmap
 
 1. Crossfade when a route or output device changes
-2. AutoEQ headphone correction and a parametric EQ
+2. A searchable AutoEQ catalog and editable parametric filters
 3. HAL listeners instead of polling; hotplug and sample-rate handling
 4. Configurable hotkeys and media-key handling
 5. Pinned/active app list and ignore list

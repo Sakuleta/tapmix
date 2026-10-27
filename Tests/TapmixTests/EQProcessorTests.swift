@@ -59,6 +59,43 @@ final class EQProcessorTests: XCTestCase {
         XCTAssertEqual(coefficient.a2, 0, accuracy: 0.0001)
     }
 
+    func testImportedFilterAppliesWhileBandsAreOff() {
+        let processor = EQProcessor(sampleRate: 48_000)
+        processor.update(EQSettings(
+            enabled: false,
+            filters: [EQFilter(kind: .peaking, frequency: 1_000, gainDB: 6, q: 1.4)]
+        ))
+
+        let sampleRate: Float = 48_000
+        var input: [Float] = []
+        var output: [Float] = []
+        for index in 0 ..< 96_000 {
+            let value = sin(2 * Float.pi * 1000 * Float(index) / sampleRate) * 0.5
+            let processed = processor.process(left: value, right: value).left
+            if index >= 9_600 {
+                input.append(value)
+                output.append(processed)
+            }
+        }
+
+        let ratio = rms(output) / rms(input)
+        XCTAssertEqual(ratio, Float(pow(10.0, 6.0 / 20.0)), accuracy: 0.1)
+    }
+
+    func testLowShelfBoostsLowFrequencies() {
+        let processor = EQProcessor(sampleRate: 48_000)
+        processor.update(EQSettings(
+            enabled: false,
+            filters: [EQFilter(kind: .lowShelf, frequency: 100, gainDB: 6, q: 0.7)]
+        ))
+
+        var output: Float = 0
+        for _ in 0 ..< 96_000 {
+            output = processor.process(left: 0.25, right: 0.25).left
+        }
+        XCTAssertEqual(output, 0.25 * Float(pow(10.0, 6.0 / 20.0)), accuracy: 0.01)
+    }
+
     func testCoefficientsStayFinite() {
         for band in EQSettings.frequencies {
             for gain: Float in [-12, -6, 0, 6, 12] {
