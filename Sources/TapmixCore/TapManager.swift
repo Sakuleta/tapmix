@@ -54,6 +54,14 @@ final class TapManager {
     var activeProcessIDs: Set<AudioObjectID> { Set(taps.keys) }
     var activeBundleIDs: Set<String> { Set(taps.values.map(\.bundleID)) }
 
+    func peakLevel(for bundleID: String) -> Float {
+        var peak: Float = 0
+        for tap in taps.values where tap.bundleID == bundleID {
+            peak = max(peak, tap.takePeakLevel())
+        }
+        return peak
+    }
+
     func setGain(_ gain: Float, for bundleID: String) {
         let clamped = AudioMath.clampedGain(gain)
         gains[bundleID] = clamped

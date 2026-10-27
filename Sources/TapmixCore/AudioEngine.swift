@@ -23,6 +23,7 @@ public final class AudioEngine: ObservableObject {
     private var outputUID: String?
     private var outputDeviceID: AudioObjectID = 0
     private var timer: Timer?
+    private var meterTimer: Timer?
     private var started = false
 
     init(store: LevelStore = LevelStore(), preferences: AppPreferences = AppPreferences()) {
@@ -45,12 +46,22 @@ public final class AudioEngine: ObservableObject {
         }
         RunLoop.main.add(timer, forMode: .common)
         self.timer = timer
+
+        let meterTimer = Timer(timeInterval: 0.1, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.tickMeters()
+            }
+        }
+        RunLoop.main.add(meterTimer, forMode: .common)
+        self.meterTimer = meterTimer
     }
 
     public func shutdown() {
         started = false
         timer?.invalidate()
         timer = nil
+        meterTimer?.invalidate()
+        meterTimer = nil
         tapManager.stopAll()
     }
 
@@ -132,6 +143,19 @@ public final class AudioEngine: ObservableObject {
         refresh()
     }
 
+    private func tickMeters() {
+        guard started, !apps.isEmpty else { return }
+        for index in apps.indices {
+            let peak = tapManager.peakLevel(for: apps[index].bundleID)
+            let previous = apps[index].level
+            let next = max(peak, previous * 0.7)
+            let value = next < 0.01 ? 0 : next
+            if abs(value - previous) > 0.005 {
+                apps[index].level = value
+            }
+        }
+    }
+
     private func reloadOutput() {
         guard let device = AudioSystem.defaultOutputDevice() else {
             outputName = "No output device"
@@ -192,7 +216,12 @@ public final class AudioEngine: ObservableObject {
             tapManager.stopAll()
         }
 
-        apps = groups.map(\.row)
+        let previousLevels = Dictionary(uniqueKeysWithValues: apps.map { ($0.bundleID, $0.level) })
+        apps = groups.map { group in
+            var row = group.row
+            row.level = previousLevels[group.bundleID] ?? 0
+            return row
+        }
         hiddenApps = preferences.all
             .filter { $0.value.ignored }
             .map { HiddenApp(bundleID: $0.key, name: $0.value.name ?? $0.key) }

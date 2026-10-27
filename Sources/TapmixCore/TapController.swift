@@ -29,6 +29,9 @@ final class TapController: TapControlling {
 
     /// Written on the real-time thread, read from the UI for the permission health check.
     private(set) var callbackCount: UInt64 = 0
+
+    /// Peak since the last UI read; aligned Float access is atomic on Apple silicon.
+    private var peakLevel: Float = 0
     private(set) var running = false
 
     private let outputDeviceUID: String
@@ -57,6 +60,12 @@ final class TapController: TapControlling {
 
     func setGain(_ gain: Float) {
         targetGain = AudioMath.clampedGain(gain)
+    }
+
+    func takePeakLevel() -> Float {
+        let peak = peakLevel
+        peakLevel = 0
+        return peak
     }
 
     func start() throws {
@@ -193,7 +202,7 @@ final class TapController: TapControlling {
             return
         }
 
-        TapRender.render(
+        let peak = TapRender.render(
             input: inputBufferList,
             output: outputBufferList,
             plan: plan,
@@ -202,6 +211,7 @@ final class TapController: TapControlling {
             rampCoefficient: ramp,
             limiter: limiter
         )
+        peakLevel = max(peakLevel, peak)
     }
 
     private static func zero(_ bufferList: UnsafeMutablePointer<AudioBufferList>) {

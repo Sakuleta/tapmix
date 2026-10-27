@@ -22,6 +22,7 @@ struct TapRenderPlan: Equatable {
 /// left/right mixdown and any extra channels stay silent. The gain ramp advances
 /// once per frame, so planar outputs always share the same gain.
 enum TapRender {
+    @discardableResult
     static func render(
         input: UnsafePointer<AudioBufferList>,
         output: UnsafeMutablePointer<AudioBufferList>,
@@ -30,7 +31,7 @@ enum TapRender {
         currentGain: inout Float,
         rampCoefficient: Float,
         limiter: LookaheadLimiter? = nil
-    ) {
+    ) -> Float {
         let inputs = UnsafeMutableAudioBufferListPointer(UnsafeMutablePointer(mutating: input))
         let outputs = UnsafeMutableAudioBufferListPointer(output)
 
@@ -42,7 +43,7 @@ enum TapRender {
 
         guard plan.tapInputIndex >= 0, plan.tapInputIndex < inputs.count,
               let tapData = inputs[plan.tapInputIndex].mData
-        else { return }
+        else { return 0 }
 
         let tapChannels = max(1, min(plan.tapInputChannels, 2))
         var frames = Int(inputs[plan.tapInputIndex].mDataByteSize)
@@ -56,12 +57,13 @@ enum TapRender {
             frames = min(frames, bufferFrames)
         }
 
-        guard frames > 0, totalOutputChannels > 0 else { return }
+        guard frames > 0, totalOutputChannels > 0 else { return 0 }
 
         let samples = tapData.assumingMemoryBound(to: Float.self)
         let goal = AudioMath.clampedGain(targetGain)
         let coefficient = min(max(rampCoefficient, 0), 1)
         var gain = currentGain
+        var peak: Float = 0
 
         for frame in 0..<frames {
             gain += (goal - gain) * coefficient
@@ -75,6 +77,7 @@ enum TapRender {
                 left = limited.left
                 right = limited.right
             }
+            peak = max(peak, abs(left), abs(right))
 
             var channelOffset = 0
             for buffer in outputs {
@@ -95,6 +98,7 @@ enum TapRender {
         }
 
         currentGain = gain
+        return peak
     }
 
     @inline(__always)
