@@ -32,6 +32,7 @@ taps. No kernel extension, no virtual audio driver, no third-party dependencies.
 - `HotKeyCenter`/`HotKeyController` — global Carbon hotkeys and their modifier setting.
 - `HUDController` — the non-activating volume HUD.
 - `LoginItemController` — SMAppService launch-at-login toggle.
+- `UpdateChecker` — on-demand GitHub release check; no background polling.
 - `SceneStore`/`MixScene` — named snapshots of per-app levels.
 - `TapmixURLCommand`/`URLCommandRouter` — `tapmix://` automation.
 - `PanelView`/`TapmixApp` — SwiftUI menu bar.

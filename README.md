@@ -33,6 +33,7 @@ no kernel extension, no virtual audio driver, and no proprietary code.
 - **Custom EQ presets** — save bands plus AutoEQ filters and reuse them on any app
 - **EQ response curve** — see the combined band/AutoEQ response while editing
 - **Local AutoEQ catalog** — point Tapmix at an AutoEQ results folder and search it
+- **On-demand update check** — ask the gear menu to compare against the latest GitHub release
 - **Launch at login** — start Tapmix with the Mac from the gear menu
 - **Pinned apps** stay visible while idle; **hide** an app to remove it from
   Tapmix entirely; **search** filters the list
@@ -164,6 +165,17 @@ even when the 10-band switch is off. **Clear** removes the import. The file's
 To search a downloaded AutoEQ results folder, choose **AutoEQ → Browse
 folder…** once; Tapmix indexes the `ParametricEQ.txt` files locally and opens a
 searchable catalog. Nothing is downloaded by Tapmix.
+
+### Homebrew
+
+The repository ships a cask for local installs:
+
+```bash
+brew install --cask ./Casks/tapmix.rb
+```
+
+It points at the notarized release asset and its SHA-256. Update the version and
+checksum in `Casks/tapmix.rb` when a new release is published.
 
 ### Launch at login
 
