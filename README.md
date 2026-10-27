@@ -14,6 +14,8 @@ no kernel extension, no virtual audio driver, and no proprietary code.
 - **Per-app boost** from 1x to 4x, protected by a 5 ms lookahead limiter
 - **Per-app mute** with a 20 ms click-free gain ramp
 - **Live per-app level meter** under each slider
+- **10-band equalizer** per app with Flat, Bass Boost, Vocal Clarity, Treble
+  and Loudness presets
 - **Pinned apps** stay visible while idle; **hide** an app to remove it from
   Tapmix entirely; **search** filters the list
 - **Output volume and mute** for the current default output device
@@ -127,8 +129,10 @@ For every process that is producing audio:
 
 `TapRender` is a small, allocation-free, frame-major buffer routine with
 mono/stereo conversion and one gain ramp per frame, so planar outputs stay
-balanced. It is covered by unit tests, including channel mapping, clamping,
-silence fill, and mute ramps.
+balanced. `EQProcessor` adds ten peaking filters per channel before the limiter;
+coefficients are rebuilt on the main thread and handed to the callback. Both
+paths are covered by unit tests, including channel mapping, clamping, mute ramps
+and a +6 dB center-frequency check.
 
 ```
 Sources/
@@ -168,7 +172,7 @@ Tests/TapmixTests/
 ## Roadmap
 
 1. Per-app output device routing (aggregate per target device)
-2. 10-band EQ, presets and loudness matching
+2. Loudness matching and AutoEQ headphone correction
 3. HAL listeners instead of polling; hotplug and sample-rate handling
 4. Global hotkeys and a volume HUD
 5. Pinned/active app list and ignore list

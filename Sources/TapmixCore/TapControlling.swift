@@ -9,6 +9,7 @@ protocol TapControlling: AnyObject {
     func start() throws
     func stop()
     func setGain(_ gain: Float)
+    func setEQ(_ settings: EQSettings)
     /// Returns the peak since the previous call and resets it.
     func takePeakLevel() -> Float
 }

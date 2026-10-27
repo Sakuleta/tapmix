@@ -34,6 +34,7 @@ final class TapManager {
     private var taps: [AudioObjectID: any TapControlling] = [:]
     private var failures: [AudioObjectID: Failure] = [:]
     private var gains: [String: Float] = [:]
+    private var eqs: [String: EQSettings] = [:]
     private var outputUID: String?
     private(set) var health: Health = .ok
 
@@ -53,6 +54,13 @@ final class TapManager {
 
     var activeProcessIDs: Set<AudioObjectID> { Set(taps.keys) }
     var activeBundleIDs: Set<String> { Set(taps.values.map(\.bundleID)) }
+
+    func setEQ(_ settings: EQSettings, for bundleID: String) {
+        eqs[bundleID] = settings
+        for tap in taps.values where tap.bundleID == bundleID {
+            tap.setEQ(settings)
+        }
+    }
 
     func peakLevel(for bundleID: String) -> Float {
         var peak: Float = 0
@@ -101,6 +109,7 @@ final class TapManager {
             do {
                 try tap.start()
                 tap.setGain(gains[desiredTap.bundleID] ?? 1)
+                tap.setEQ(eqs[desiredTap.bundleID] ?? EQSettings())
                 taps[id] = tap
                 failures[id] = nil
             } catch {

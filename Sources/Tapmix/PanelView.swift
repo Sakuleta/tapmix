@@ -244,6 +244,7 @@ struct PanelView: View {
 private struct AppRowView: View {
     let app: AppRow
     @ObservedObject var engine: AudioEngine
+    @State private var showEQ = false
 
     var body: some View {
         HStack(spacing: 10) {
@@ -310,6 +311,21 @@ private struct AppRowView: View {
                     .fixedSize()
                     .help("Volume boost (soft-limited)")
                     .accessibilityLabel("Volume boost for \(app.name)")
+
+                    Button {
+                        showEQ.toggle()
+                    } label: {
+                        Image(systemName: "slider.vertical.3")
+                            .font(.system(size: 10))
+                            .frame(width: 14)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(app.eq.isActive ? Color.accentColor : .secondary)
+                    .help("Equalizer for \(app.name)")
+                    .accessibilityLabel("Equalizer for \(app.name)")
+                    .popover(isPresented: $showEQ, arrowEdge: .trailing) {
+                        EQPanel(bundleID: app.bundleID, initial: app.eq, engine: engine)
+                    }
 
                     Slider(
                         value: Binding(
@@ -378,5 +394,95 @@ private struct LevelMeter: View {
             }
         }
         .accessibilityHidden(true)
+    }
+}
+
+private struct EQPanel: View {
+    let bundleID: String
+    @ObservedObject var engine: AudioEngine
+    @State private var settings: EQSettings
+
+    init(bundleID: String, initial: EQSettings, engine: AudioEngine) {
+        self.bundleID = bundleID
+        self.engine = engine
+        _settings = State(initialValue: initial)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Toggle("Equalizer", isOn: Binding(
+                    get: { settings.enabled },
+                    set: { enabled in
+                        settings.enabled = enabled
+                        apply()
+                    }
+                ))
+                .toggleStyle(.switch)
+                .controlSize(.mini)
+
+                Spacer()
+
+                Menu("Presets") {
+                    ForEach(EQPreset.allCases) { preset in
+                        Button(preset.rawValue) {
+                            settings = preset.settings
+                            apply()
+                        }
+                    }
+                }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+            }
+
+            ForEach(0 ..< EQSettings.bandCount, id: \.self) { index in
+                HStack(spacing: 6) {
+                    Text(Self.label(index))
+                        .font(.system(size: 9, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 30, alignment: .leading)
+
+                    Slider(value: Binding(
+                        get: { Double(settings.gains[index]) },
+                        set: { value in
+                            settings.gains[index] = Float(value)
+                            settings.enabled = true
+                            apply()
+                        }
+                    ), in: Double(EQSettings.gainRange.lowerBound) ... Double(EQSettings.gainRange.upperBound))
+                    .controlSize(.mini)
+
+                    Text("\(Int(settings.gains[index].rounded()))")
+                        .font(.system(size: 9, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 20, alignment: .trailing)
+                }
+            }
+
+            HStack {
+                Text("dB")
+                    .font(.system(size: 9))
+                    .foregroundStyle(.tertiary)
+                Spacer()
+                Button("Flat") {
+                    settings = EQSettings()
+                    apply()
+                }
+                .font(.caption)
+            }
+        }
+        .padding(12)
+        .frame(width: 300)
+    }
+
+    private func apply() {
+        engine.setEQ(bundleID, settings)
+    }
+
+    private static func label(_ index: Int) -> String {
+        let frequency = EQSettings.frequencies[index]
+        return frequency >= 1000
+            ? "\(Int(frequency / 1000))k"
+            : "\(Int(frequency))"
     }
 }

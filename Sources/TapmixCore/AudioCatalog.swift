@@ -21,7 +21,8 @@ struct AppGroup {
             volume: level.volume,
             muted: level.muted,
             boost: level.boost,
-            pinned: pinned
+            pinned: pinned,
+            eq: level.eq
         )
     }
 }

@@ -17,6 +17,7 @@ final class FakeTap: TapControlling {
     private(set) var startCount = 0
     private(set) var stopCount = 0
     private(set) var gain: Float = 1
+    private(set) var eq = EQSettings()
 
     init(processObjectID: AudioObjectID, bundleID: String, createdAt: Date) {
         self.processObjectID = processObjectID
@@ -30,6 +31,7 @@ final class FakeTap: TapControlling {
     }
     func stop() { stopCount += 1 }
     func setGain(_ gain: Float) { self.gain = gain }
+    func setEQ(_ settings: EQSettings) { eq = settings }
     func takePeakLevel() -> Float {
         defer { peak = 0 }
         return peak
@@ -208,6 +210,20 @@ final class TapManagerTests: XCTestCase {
         manager.setGain(0, for: "com.b")
         sync([a, b])
         XCTAssertEqual(created[1].gain, 0)
+    }
+
+    func testEQPropagatesToTaps() {
+        let a = desired(1, "com.a")
+        let settings = EQPreset.vocal.settings
+
+        manager.setEQ(settings, for: "com.a")
+        sync([a])
+        XCTAssertEqual(created[0].eq, settings)
+
+        let next = EQPreset.treble.settings
+        manager.setEQ(next, for: "com.a")
+        XCTAssertEqual(created[0].eq, next)
+        XCTAssertEqual(manager.activeProcessIDs, [1])
     }
 
     func testPeakLevelAggregatesAndResets() {
