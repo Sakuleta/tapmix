@@ -83,6 +83,8 @@ public struct AppRow: Identifiable, Equatable {
     public var muted: Bool
     public var boost: Float
     public let pinned: Bool
+    /// Latest output peak in 0...1, updated by the meter timer.
+    public var level: Float
 
     public init(
         bundleID: String,
@@ -92,7 +94,8 @@ public struct AppRow: Identifiable, Equatable {
         volume: Float,
         muted: Bool,
         boost: Float = 1,
-        pinned: Bool = false
+        pinned: Bool = false,
+        level: Float = 0
     ) {
         self.bundleID = bundleID
         self.name = name
@@ -102,6 +105,7 @@ public struct AppRow: Identifiable, Equatable {
         self.muted = muted
         self.boost = boost
         self.pinned = pinned
+        self.level = level
     }
 }
 

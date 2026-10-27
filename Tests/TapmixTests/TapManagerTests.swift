@@ -12,6 +12,7 @@ final class FakeTap: TapControlling {
     let bundleID: String
     let createdAt: Date
     var callbackCount: UInt64 = 1
+    var peak: Float = 0
     var startError: Error?
     private(set) var startCount = 0
     private(set) var stopCount = 0
@@ -29,6 +30,10 @@ final class FakeTap: TapControlling {
     }
     func stop() { stopCount += 1 }
     func setGain(_ gain: Float) { self.gain = gain }
+    func takePeakLevel() -> Float {
+        defer { peak = 0 }
+        return peak
+    }
 }
 
 @MainActor
@@ -203,6 +208,18 @@ final class TapManagerTests: XCTestCase {
         manager.setGain(0, for: "com.b")
         sync([a, b])
         XCTAssertEqual(created[1].gain, 0)
+    }
+
+    func testPeakLevelAggregatesAndResets() {
+        let a = desired(1, "com.a")
+        let b = desired(2, "com.a")
+        sync([a, b])
+
+        created[0].peak = 0.4
+        created[1].peak = 0.8
+        XCTAssertEqual(manager.peakLevel(for: "com.a"), 0.8, accuracy: 0.0001)
+        XCTAssertEqual(manager.peakLevel(for: "com.a"), 0, accuracy: 0.0001)
+        XCTAssertEqual(manager.peakLevel(for: "com.b"), 0, accuracy: 0.0001)
     }
 
     func testHealthyTapSurvivesAnotherStartFailure() {

@@ -13,6 +13,7 @@ no kernel extension, no virtual audio driver, and no proprietary code.
 - **Per-app volume** from 0% to 200% (100% is unity gain)
 - **Per-app boost** from 1x to 4x, protected by a 5 ms lookahead limiter
 - **Per-app mute** with a 20 ms click-free gain ramp
+- **Live per-app level meter** under each slider
 - **Pinned apps** stay visible while idle; **hide** an app to remove it from
   Tapmix entirely; **search** filters the list
 - **Output volume and mute** for the current default output device
@@ -155,8 +156,8 @@ Tests/TapmixTests/
   output device.
 - **Output volume depends on the device.** The slider uses the HAL volume
   property; some HDMI/USB interfaces expose no software volume and ignore it.
-- **Polling every second.** Fine for a menu bar utility; HAL listeners are a
-  later optimization.
+- **Polling discovery.** The app list refreshes every second and meters at
+  10 Hz; HAL listeners are a later optimization.
 - **Signing.** Ad-hoc signing is the fallback; TCC grants do not survive
   rebuilds without the stable identity described above.
 

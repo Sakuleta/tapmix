@@ -32,7 +32,7 @@ struct PanelView: View {
 
     private var panelHeight: CGFloat {
         let visibleRows = min(max(filteredApps.count, 1), 6)
-        return min(480, 240 + CGFloat(visibleRows) * 52)
+        return min(500, 244 + CGFloat(visibleRows) * 58)
     }
 
     private var header: some View {
@@ -323,6 +323,9 @@ private struct AppRowView: View {
                     .accessibilityLabel("Volume for \(app.name)")
                     .accessibilityValue("\(Int((app.volume * 100).rounded())) percent")
                 }
+
+                LevelMeter(level: app.level)
+                    .frame(height: 2)
             }
         }
         .padding(.horizontal, 8)
@@ -357,6 +360,23 @@ private struct AppRowView: View {
             }
         }
         .frame(width: 28, height: 28)
+        .accessibilityHidden(true)
+    }
+}
+
+private struct LevelMeter: View {
+    let level: Float
+
+    var body: some View {
+        GeometryReader { proxy in
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(Color.primary.opacity(0.08))
+                Capsule()
+                    .fill(level > 0.9 ? Color.orange : Color.green.opacity(0.8))
+                    .frame(width: proxy.size.width * CGFloat(min(max(level, 0), 1)))
+            }
+        }
         .accessibilityHidden(true)
     }
 }
