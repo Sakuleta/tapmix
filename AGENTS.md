@@ -38,6 +38,7 @@ taps. No kernel extension, no virtual audio driver, no third-party dependencies.
 - `UpdateController` — Sparkle updater; appcast + EdDSA key, daily check.
 - `SceneStore`/`MixScene` — named snapshots of per-app levels.
 - `TapmixURLCommand`/`URLCommandRouter` — `tapmix://` automation.
+- `DesignSystem` — glass panel surface, cards, hover/press feedback.
 - `PanelView`/`TapmixApp` — SwiftUI menu bar.
 
 ## Realtime invariants

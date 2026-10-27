@@ -88,6 +88,15 @@ private struct HUDView: View {
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
         .frame(width: 220, height: 64)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .background {
+            // The HUD lives in a transparent borderless panel, so the glass
+            // samples the desktop behind it.
+            if #available(macOS 26.0, *) {
+                Color.clear.glassEffect(.regular, in: .rect(cornerRadius: 14))
+            } else {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(.regularMaterial)
+            }
+        }
     }
 }
