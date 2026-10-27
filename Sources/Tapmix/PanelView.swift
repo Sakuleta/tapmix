@@ -45,7 +45,9 @@ struct PanelView: View {
     }
 
     private var panelHeight: CGFloat {
-        let visibleRows = min(max(filteredApps.count, 1), 6)
+        // Keep the panel height stable while searching so MenuBarExtra does not
+        // resize (and leave a blank gap) on every keystroke.
+        let visibleRows = min(max(engine.apps.count, 1), 6)
         return min(500, 244 + CGFloat(visibleRows) * 58)
     }
 
@@ -200,10 +202,8 @@ struct PanelView: View {
                     .tracking(0.8)
                     .foregroundStyle(.secondary)
                 Spacer()
-                TextField("Search", text: $search)
-                    .textFieldStyle(.roundedBorder)
-                    .controlSize(.mini)
-                    .frame(width: 96)
+                SearchField(text: $search)
+                    .frame(width: 116)
                     .accessibilityLabel("Search apps")
                 Text("\(filteredApps.count)")
                     .font(.system(size: 10, design: .monospaced))
@@ -793,5 +793,43 @@ private struct EQPanel: View {
         return frequency >= 1000
             ? "\(Int(frequency / 1000))k"
             : "\(Int(frequency))"
+    }
+}
+
+private struct SearchField: NSViewRepresentable {
+    @Binding var text: String
+
+    func makeNSView(context: Context) -> NSSearchField {
+        let field = NSSearchField()
+        field.placeholderString = "Search"
+        field.controlSize = .small
+        field.font = .systemFont(ofSize: 11)
+        field.focusRingType = .none
+        field.sendsSearchStringImmediately = true
+        field.delegate = context.coordinator
+        return field
+    }
+
+    func updateNSView(_ field: NSSearchField, context: Context) {
+        if field.stringValue != text {
+            field.stringValue = text
+        }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(text: $text)
+    }
+
+    final class Coordinator: NSObject, NSSearchFieldDelegate {
+        private let text: Binding<String>
+
+        init(text: Binding<String>) {
+            self.text = text
+        }
+
+        func controlTextDidChange(_ notification: Notification) {
+            guard let field = notification.object as? NSSearchField else { return }
+            text.wrappedValue = field.stringValue
+        }
     }
 }
