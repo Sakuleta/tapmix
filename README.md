@@ -249,6 +249,12 @@ WhatsApp and Webex count as calls, as do browsers for web meetings, and the
 active call app is never ducked. Everything returns to its previous level 1.5
 seconds after the microphone is released.
 
+A process that captures the microphone plays untouched for the length of the
+call: its row shows a green phone and the slider waits. Call apps run voice
+processing, which ducks every other output and cancels echo against its own;
+re-playing the call through a tap made it quiet and could echo for the other
+side.
+
 Tapmix asks Core Audio which processes capture input; it never reads
 microphone audio. Recorders and utilities that hold the microphone open (Hex,
 QuickTime, Voice Memos, virtual audio drivers) do not start ducking, so music
@@ -344,6 +350,8 @@ Tests/TapmixTests/
   fallback. Meters update at 10 Hz while the panel is open.
 - **Call detection is call-app based.** Recorders that hold the microphone do
   not duck the mix, and a browser-based call exempts the whole browser.
+- **Any process holding the microphone bypasses Tapmix.** During a web meeting
+  that includes the browser's other tabs until the meeting ends.
 - **Device priority reacts to connections only.** It does not fight a manual
   output switch while the preferred device stays connected.
 - **Night mode is a compressor, not loudness matching.** Heavy use can pump;

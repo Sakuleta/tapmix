@@ -29,9 +29,14 @@ struct TapPlan: Equatable {
             let route = group.level.outputUID.flatMap { availableUIDs.contains($0) ? $0 : nil }
             guard let target = route ?? outputUID else { continue }
 
+            // A process that also captures input is in a call. Its voice
+            // processing ducks every other output and cancels echo against
+            // its own; re-playing it from a tap makes the call quiet and
+            // breaks echo cancellation, so it plays untouched.
             for processID in group.processObjectIDs
-            where group.playingProcessObjectIDs.contains(processID)
-                || activeProcessIDs.contains(processID)
+            where !group.capturingProcessObjectIDs.contains(processID)
+                && (group.playingProcessObjectIDs.contains(processID)
+                    || activeProcessIDs.contains(processID))
             {
                 taps.append(
                     TapManager.DesiredTap(

@@ -109,6 +109,8 @@ public struct AppRow: Identifiable, Equatable {
     public let name: String
     public let icon: NSImage?
     public let isPlaying: Bool
+    /// The app captures input, so its audio bypasses Tapmix until the call ends.
+    public let isInCall: Bool
     public var volume: Float
     public var muted: Bool
     public var boost: Float
@@ -128,6 +130,7 @@ public struct AppRow: Identifiable, Equatable {
         name: String,
         icon: NSImage?,
         isPlaying: Bool,
+        isInCall: Bool = false,
         volume: Float,
         muted: Bool,
         boost: Float = 1,
@@ -144,6 +147,7 @@ public struct AppRow: Identifiable, Equatable {
         self.name = name
         self.icon = icon
         self.isPlaying = isPlaying
+        self.isInCall = isInCall
         self.volume = volume
         self.muted = muted
         self.boost = boost

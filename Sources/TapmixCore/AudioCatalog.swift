@@ -9,6 +9,7 @@ struct AppGroup {
     let isPlaying: Bool
     let processObjectIDs: [AudioObjectID]
     let playingProcessObjectIDs: [AudioObjectID]
+    let capturingProcessObjectIDs: [AudioObjectID]
     let level: AppLevel
     let pinned: Bool
 
@@ -18,6 +19,7 @@ struct AppGroup {
             name: name,
             icon: icon,
             isPlaying: isPlaying,
+            isInCall: !capturingProcessObjectIDs.isEmpty,
             volume: level.volume,
             muted: level.muted,
             boost: level.boost,
@@ -67,6 +69,7 @@ enum AudioCatalog {
                 isPlaying: playing,
                 processObjectIDs: bundleProcesses.map(\.objectID),
                 playingProcessObjectIDs: bundleProcesses.filter(\.isPlaying).map(\.objectID),
+                capturingProcessObjectIDs: bundleProcesses.filter(\.isCapturing).map(\.objectID),
                 level: levels[bundleID] ?? AppLevel(),
                 pinned: pinned
             )
