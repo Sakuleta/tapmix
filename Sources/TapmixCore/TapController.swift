@@ -34,6 +34,8 @@ final class TapController: TapControlling {
     private var peakLevel: Float = 0
     private(set) var running = false
 
+    var isRecording: Bool { recorder?.isActive ?? false }
+
     private let outputDeviceUID: String
     private let log = Logger(subsystem: "com.mardinli.tapmix", category: "tap")
     private let queue = DispatchQueue(label: "com.mardinli.tapmix.tap", qos: .userInteractive)

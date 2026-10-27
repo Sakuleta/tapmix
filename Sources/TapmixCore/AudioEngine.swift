@@ -234,13 +234,21 @@ public final class AudioEngine: ObservableObject {
     public func startRecording(_ bundleID: String, to url: URL) -> Bool {
         let urls = tapManager.startRecording(bundleID: bundleID, baseURL: url)
         guard !urls.isEmpty else { return false }
-        recordingBundleIDs.insert(bundleID)
+        syncRecordingState()
         return true
     }
 
     public func stopRecording(_ bundleID: String) {
         tapManager.stopRecording(bundleID: bundleID)
-        recordingBundleIDs.remove(bundleID)
+        syncRecordingState()
+    }
+
+    /// Recording state has one owner: the tap that owns the recorder.
+    private func syncRecordingState() {
+        let current = tapManager.recordingBundleIDs
+        if recordingBundleIDs != current {
+            recordingBundleIDs = current
+        }
     }
 
     public func saveEQPreset(_ name: String, for bundleID: String) {
@@ -307,7 +315,7 @@ public final class AudioEngine: ObservableObject {
         level.volume = min(max(row.volume + delta, 0), 2)
         level.muted = false
         store.set(level, for: bundleID)
-        tapManager.setGain(level.gain, for: bundleID)
+        tapManager.setGain(effectiveGain(level, bundleID: bundleID), for: bundleID)
         updateRow(bundleID, volume: level.volume, muted: false)
         return ActiveVolumeState(
             bundleID: bundleID,
@@ -485,8 +493,13 @@ public final class AudioEngine: ObservableObject {
     }
 
     private func refresh() {
-        let processes = AudioSystem.processes()
-        syncProcessListeners(processes.map(\.objectID))
+        // A read failure is not "nothing is playing": keep the current rows and
+        // taps until the HAL answers again.
+        let processList = AudioSystem.processes()
+        let processes = processList ?? []
+        if processList != nil {
+            syncProcessListeners(processes.map(\.objectID))
+        }
         let running = RunningAppDescriptor.snapshot(NSWorkspace.shared.runningApplications)
         let devices = AudioSystem.outputDevices()
         if devices != outputDevices {
@@ -511,38 +524,30 @@ public final class AudioEngine: ObservableObject {
             tapManager.setAudioUnit(group.level.audioUnit, for: group.bundleID)
         }
 
-        var desired: [TapManager.DesiredTap] = []
-        for group in groups {
-            let route = group.level.outputUID.flatMap { availableUIDs.contains($0) ? $0 : nil }
-            guard let target = route ?? outputUID else { continue }
-
-            for processID in group.processObjectIDs
-            where group.playingProcessObjectIDs.contains(processID)
-                || tapManager.activeProcessIDs.contains(processID)
-            {
-                desired.append(
-                    TapManager.DesiredTap(
-                        processObjectID: processID,
-                        bundleID: group.bundleID,
-                        displayName: group.name,
-                        outputUID: target
-                    )
-                )
+        let plan = TapPlan.make(
+            groups: groups,
+            availableUIDs: availableUIDs,
+            outputUID: outputUID,
+            activeProcessIDs: tapManager.activeProcessIDs,
+            processListReadable: processList != nil
+        )
+        if plan.isComplete {
+            if outputUID == nil, plan.taps.isEmpty {
+                tapManager.stopAll()
+            } else {
+                tapManager.sync(desired: plan.taps)
             }
         }
 
-        if outputUID == nil, desired.isEmpty {
-            tapManager.stopAll()
-        } else {
-            tapManager.sync(desired: desired)
+        if processList != nil {
+            let previousLevels = Dictionary(uniqueKeysWithValues: apps.map { ($0.bundleID, $0.level) })
+            apps = groups.map { group in
+                var row = group.row
+                row.level = previousLevels[group.bundleID] ?? 0
+                return row
+            }
         }
-
-        let previousLevels = Dictionary(uniqueKeysWithValues: apps.map { ($0.bundleID, $0.level) })
-        apps = groups.map { group in
-            var row = group.row
-            row.level = previousLevels[group.bundleID] ?? 0
-            return row
-        }
+        syncRecordingState()
         hiddenApps = preferences.all
             .filter { $0.value.ignored }
             .map { HiddenApp(bundleID: $0.key, name: $0.value.name ?? $0.key) }
