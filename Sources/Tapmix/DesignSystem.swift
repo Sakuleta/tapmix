@@ -14,9 +14,19 @@ enum Design {
 /// background clear lets the desktop show through the blur. The gradient adds
 /// the top sheen that makes the surface read as glass instead of a flat box.
 struct PanelSurface: View {
+    @Environment(\.colorScheme) private var colorScheme
+
     var body: some View {
         ZStack {
             Color.clear
+            // The window material blends with whatever is behind it, so a bright
+            // window washes white text out. The scrim keeps contrast in both
+            // appearances without turning the panel opaque.
+            if colorScheme == .dark {
+                Color.black.opacity(0.30)
+            } else {
+                Color.white.opacity(0.5)
+            }
             LinearGradient(
                 colors: [Color.white.opacity(0.05), .clear],
                 startPoint: .top,
