@@ -370,6 +370,11 @@ push the updated `docs/appcast.xml` after publishing the GitHub release so
 installed copies see it. The appcast must be signed: Sparkle refuses unsigned
 updates when `SUPublicEDKey` is set.
 
+Automatic **installation** needs the notarized Developer ID build. A locally
+signed development build can read the feed but Sparkle will refuse to install
+an update signed with a different identity, so test updates with the release
+build installed in `/Applications`.
+
 ## Roadmap
 
 - Notarized releases for every change set
