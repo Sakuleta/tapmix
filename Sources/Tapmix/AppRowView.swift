@@ -146,17 +146,16 @@ struct AppRowView: View {
                     .help("Output for \(app.name)")
                     .accessibilityLabel("Output for \(app.name)")
 
-                    Slider(
+                    VolumeSlider(
                         value: Binding(
                             get: { Double(app.volume) },
                             set: { engine.setVolume(app.bundleID, $0) }
                         ),
-                        in: 0 ... 2
+                        range: 0 ... 2,
+                        tint: app.volume > 1 || app.boost > 1 ? .orange : .accentColor,
+                        label: "Volume for \(app.name)",
+                        valueDescription: "\(Int((app.volume * 100).rounded())) percent"
                     )
-                    .controlSize(.mini)
-                    .tint(app.volume > 1 || app.boost > 1 ? .orange : .accentColor)
-                    .accessibilityLabel("Volume for \(app.name)")
-                    .accessibilityValue("\(Int((app.volume * 100).rounded())) percent")
                 }
 
                 LevelMeter(level: app.level)
