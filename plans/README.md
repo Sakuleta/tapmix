@@ -12,11 +12,11 @@ use commits for drift detection.
 
 | Plan | Title | Priority | Effort | Depends on | Status |
 |---|---|---|---|---|---|
-| [001](001-output-mute-and-accessibility.md) | Output mute fallback + accessibility labels | P1 | S | — | TODO |
-| [002](002-tap-lifecycle-manager.md) | Tap lifecycle manager + per-tap health | P1 | M | — (run after 001) | TODO |
-| [003](003-render-plan.md) | Explicit render plan + tap format guard | P1 | M | 002 | TODO |
-| [004](004-audio-catalog.md) | Pure audio catalog + resolver tests | P2 | M | 002 | TODO |
-| [005](005-stable-signing-and-docs.md) | Stable signing, check script, README/AGENTS | P2 | S | 002, 003, 004 | TODO |
+| [001](001-output-mute-and-accessibility.md) | Output mute fallback + accessibility labels | P1 | S | — | DONE |
+| [002](002-tap-lifecycle-manager.md) | Tap lifecycle manager + per-tap health | P1 | M | — (run after 001) | DONE |
+| [003](003-render-plan.md) | Explicit render plan + tap format guard | P1 | M | 002 | DONE |
+| [004](004-audio-catalog.md) | Pure audio catalog + resolver tests | P2 | M | 002 | DONE |
+| [005](005-stable-signing-and-docs.md) | Stable signing, check script, README/AGENTS | P2 | S | 002, 003, 004 | DONE |
 
 Status values: `TODO` · `IN PROGRESS` · `DONE` · `BLOCKED (reason)` ·
 `REJECTED (reason)`.

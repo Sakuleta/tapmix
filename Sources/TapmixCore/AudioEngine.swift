@@ -17,13 +17,11 @@ public final class AudioEngine: ObservableObject {
     public var isEditingOutputVolume = false
 
     private let store: LevelStore
-    private var taps: [AudioObjectID: TapController] = [:]
-    private var failures: [AudioObjectID: Date] = [:]
+    private let tapManager = TapManager()
     private var outputUID: String?
     private var outputDeviceID: AudioObjectID = 0
     private var timer: Timer?
     private var started = false
-    private var captureBlocked = false
 
     init(store: LevelStore = LevelStore()) {
         self.store = store
@@ -50,13 +48,12 @@ public final class AudioEngine: ObservableObject {
         started = false
         timer?.invalidate()
         timer = nil
-        stopAllTaps()
+        tapManager.stopAll()
     }
 
     public func retry() {
-        captureBlocked = false
+        tapManager.retry()
         errorMessage = nil
-        failures.removeAll()
         refresh()
     }
 
@@ -66,7 +63,7 @@ public final class AudioEngine: ObservableObject {
         var level = store.level(for: bundleID)
         level.volume = Float(min(max(volume, 0), 2))
         store.set(level, for: bundleID)
-        apply(level, to: bundleID)
+        tapManager.setGain(level.gain, for: bundleID)
         updateRow(bundleID, volume: level.volume)
     }
 
@@ -74,7 +71,7 @@ public final class AudioEngine: ObservableObject {
         var level = store.level(for: bundleID)
         level.muted.toggle()
         store.set(level, for: bundleID)
-        apply(level, to: bundleID)
+        tapManager.setGain(level.gain, for: bundleID)
         updateRow(bundleID, muted: level.muted)
     }
 
@@ -111,7 +108,7 @@ public final class AudioEngine: ObservableObject {
             outputName = "No output device"
             if outputUID != nil {
                 outputUID = nil
-                stopAllTaps()
+                tapManager.stopAll()
             }
             return
         }
@@ -125,115 +122,52 @@ public final class AudioEngine: ObservableObject {
         }
         outputMuted = AudioSystem.outputMuted(device) ?? false
 
-        if outputUID != uid {
-            outputUID = uid
-            stopAllTaps()
-        }
+        outputUID = uid
     }
 
     private func refresh() {
-        let processes = AudioSystem.processes().filter { !$0.bundleID.isEmpty }
-        let alive = Set(processes.map(\.objectID))
+        let processes = AudioSystem.processes()
+        let running = RunningAppDescriptor.snapshot(NSWorkspace.shared.runningApplications)
+        let groups = AudioCatalog.groups(
+            processes: processes,
+            running: running,
+            levels: store.allLevels,
+            activeBundleIDs: tapManager.activeBundleIDs
+        )
 
-        for (objectID, tap) in taps where !alive.contains(objectID) {
-            tap.stop()
-            taps[objectID] = nil
-            failures[objectID] = nil
+        for group in groups {
+            tapManager.setGain(group.level.gain, for: group.bundleID)
         }
 
-        let running = NSWorkspace.shared.runningApplications
-        var groups: [String: [AudioProcess]] = [:]
-        var identities: [String: AppIdentity] = [:]
-
-        for process in processes {
-            guard let identity = AppResolver.resolve(process, running: running) else { continue }
-            groups[identity.bundleID, default: []].append(process)
-            identities[identity.bundleID] = identity
-        }
-
-        var rows: [AppRow] = []
-        var playingObjects: Set<AudioObjectID> = []
-
-        for (bundleID, bundleProcesses) in groups {
-            guard let identity = identities[bundleID] else { continue }
-            let level = store.level(for: bundleID)
-            let playing = bundleProcesses.contains { $0.isPlaying }
-            let hasTaps = taps.values.contains { $0.bundleID == bundleID }
-
-            // Keep the panel focused: show apps that are audible, were adjusted before,
-            // or still have an active tap. Idle system processes stay hidden.
-            guard playing || hasTaps || store.hasLevel(for: bundleID) else { continue }
-
-            if playing {
-                playingObjects.formUnion(bundleProcesses.filter(\.isPlaying).map(\.objectID))
-            }
-
-            rows.append(
-                AppRow(
-                    bundleID: bundleID,
-                    name: identity.name,
-                    icon: identity.icon,
-                    isPlaying: playing,
-                    volume: level.volume,
-                    muted: level.muted
-                )
-            )
-
-            for process in bundleProcesses where process.isPlaying {
-                if let tap = taps[process.objectID] {
-                    tap.setGain(level.gain)
-                } else if let outputUID, !captureBlocked, shouldAttempt(process.objectID) {
-                    let tap = TapController(
-                        processObjectID: process.objectID,
-                        bundleID: bundleID,
-                        outputDeviceUID: outputUID
+        var desired: [TapManager.DesiredTap] = []
+        for group in groups {
+            for processID in group.processObjectIDs
+            where group.playingProcessObjectIDs.contains(processID)
+                || tapManager.activeProcessIDs.contains(processID)
+            {
+                desired.append(
+                    TapManager.DesiredTap(
+                        processObjectID: processID,
+                        bundleID: group.bundleID,
+                        displayName: group.name
                     )
-                    do {
-                        try tap.start()
-                        tap.setGain(level.gain)
-                        taps[process.objectID] = tap
-                        failures[process.objectID] = nil
-                    } catch {
-                        failures[process.objectID] = Date()
-                        if errorMessage == nil {
-                            errorMessage = error.localizedDescription
-                                + " Allow “Tapmix” in System Settings → Privacy & Security → Screen & System Audio Recording, then press Retry."
-                        }
-                    }
-                }
+                )
             }
         }
 
-        apps = rows.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-        checkHealth(playing: playingObjects)
-    }
-
-    /// Core Audio can return success but deliver no callbacks when audio-capture
-    /// permission is denied. Detect that state instead of silently doing nothing.
-    private func checkHealth(playing: Set<AudioObjectID>) {
-        guard errorMessage == nil else { return }
-
-        for (objectID, tap) in taps where playing.contains(objectID) {
-            guard tap.callbackCount == 0,
-                  Date().timeIntervalSince(tap.createdAt) > 6
-            else { continue }
-
-            stopAllTaps()
-            captureBlocked = true
-            failures[objectID] = Date()
-            errorMessage = "macOS is not delivering audio for “\(tap.bundleID)”. Allow “Tapmix” in System Settings → Privacy & Security → Screen & System Audio Recording, then press Retry."
-            return
+        if let outputUID {
+            tapManager.sync(desired: desired, outputUID: outputUID)
+        } else {
+            tapManager.stopAll()
         }
-    }
 
-    private func shouldAttempt(_ objectID: AudioObjectID) -> Bool {
-        guard let failed = failures[objectID] else { return true }
-        return Date().timeIntervalSince(failed) > 10
-    }
+        apps = groups.map(\.row)
 
-    private func apply(_ level: AppLevel, to bundleID: String) {
-        for tap in taps.values where tap.bundleID == bundleID {
-            tap.setGain(level.gain)
+        switch tapManager.health {
+        case .ok:
+            errorMessage = nil
+        case let .stalled(_, message):
+            errorMessage = message
         }
     }
 
@@ -245,12 +179,5 @@ public final class AudioEngine: ObservableObject {
         if let muted {
             apps[index].muted = muted
         }
-    }
-
-    private func stopAllTaps() {
-        for tap in taps.values {
-            tap.stop()
-        }
-        taps.removeAll()
     }
 }

@@ -100,6 +100,8 @@ struct PanelView: View {
                     engine.isEditingOutputVolume = editing
                 }
                 .controlSize(.small)
+                .accessibilityLabel("Output volume")
+                .accessibilityValue("\(Int((engine.outputVolume * 100).rounded())) percent")
             }
         }
         .padding(.horizontal, 14)
@@ -219,6 +221,7 @@ private struct AppRowView: View {
                     Circle()
                         .fill(app.isPlaying ? Color.green : Color.secondary.opacity(0.25))
                         .frame(width: 5, height: 5)
+                        .accessibilityHidden(true)
 
                     Text(app.name)
                         .font(.system(size: 12.5, weight: .medium))
@@ -253,6 +256,8 @@ private struct AppRowView: View {
                     )
                     .controlSize(.mini)
                     .tint(app.volume > 1 ? .orange : .accentColor)
+                    .accessibilityLabel("Volume for \(app.name)")
+                    .accessibilityValue("\(Int((app.volume * 100).rounded())) percent")
                 }
             }
         }
@@ -279,5 +284,6 @@ private struct AppRowView: View {
             }
         }
         .frame(width: 28, height: 28)
+        .accessibilityHidden(true)
     }
 }

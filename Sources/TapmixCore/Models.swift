@@ -17,7 +17,7 @@ public struct AppLevel: Codable, Equatable {
 
 /// Persists per-bundle volume/mute state as JSON in UserDefaults.
 public final class LevelStore {
-    private static let key = "com.sakuleta.tapmix.levels"
+    private static let key = "com.mardinli.tapmix.levels"
 
     private let defaults: UserDefaults
     private var levels: [String: AppLevel]
@@ -46,6 +46,8 @@ public final class LevelStore {
     public func hasLevel(for bundleID: String) -> Bool {
         levels[bundleID] != nil
     }
+
+    public var allLevels: [String: AppLevel] { levels }
 }
 
 /// One row in the menu bar panel. Processes that share a host application are grouped.

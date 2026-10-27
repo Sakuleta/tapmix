@@ -78,7 +78,7 @@ Behaviour to preserve:
 - Helper processes merge under the host app; host name and icon win.
 - A group is listed if playing, a stored level exists, or an active tap exists.
 - Rows sort by localized name.
-- `Bundle.main.bundleIdentifier` and `com.sakuleta.tapmix` are excluded.
+- `Bundle.main.bundleIdentifier` and `com.mardinli.tapmix` are excluded.
 - The local SoundSource/BGM ignored prefixes remain for now.
 
 ## Commands you will need
@@ -355,7 +355,7 @@ Tests:
 1. `testHelperMapsToHost` — expect one group `Brave Browser`, ID `com.brave.Browser`, playing IDs `[1]`.
 2. `testOrphanHelperIsHidden` — only the helper descriptor, no host → empty.
 3. `testIgnoredBundleIsHidden` — host `com.apple.coreaudio` → empty.
-4. `testOwnBundleIsHidden` — `com.sakuleta.tapmix` → empty.
+4. `testOwnBundleIsHidden` — `com.mardinli.tapmix` → empty.
 5. `testPlayingAppAppearsWithoutStoredLevel`.
 6. `testStoredLevelKeepsIdleApp` — process `isPlaying: false`, level `[id: AppLevel(volume: 0.4)]` → one group, `isPlaying` false.
 7. `testActiveTapKeepsIdleApp` — `activeBundleIDs: [id]` → one group.

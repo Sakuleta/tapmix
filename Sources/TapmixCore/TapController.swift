@@ -5,11 +5,14 @@ import os
 
 enum TapError: LocalizedError {
     case coreAudio(String, OSStatus)
+    case unsupportedFormat(String)
 
     var errorDescription: String? {
         switch self {
         case let .coreAudio(step, status):
             return "\(step) failed (Core Audio error \(status))."
+        case let .unsupportedFormat(detail):
+            return "The tap format is not supported: \(detail)"
         }
     }
 }
@@ -19,7 +22,7 @@ enum TapError: LocalizedError {
 ///
 /// The tap uses `.mutedWhenTapped`, so the app's direct output is suppressed only
 /// while this tap is being read. Destroying the controller restores normal audio.
-final class TapController {
+final class TapController: TapControlling {
     let processObjectID: AudioObjectID
     let bundleID: String
     let createdAt = Date()
@@ -29,8 +32,8 @@ final class TapController {
     private(set) var running = false
 
     private let outputDeviceUID: String
-    private let log = Logger(subsystem: "com.sakuleta.tapmix", category: "tap")
-    private let queue = DispatchQueue(label: "com.sakuleta.tapmix.tap", qos: .userInteractive)
+    private let log = Logger(subsystem: "com.mardinli.tapmix", category: "tap")
+    private let queue = DispatchQueue(label: "com.mardinli.tapmix.tap", qos: .userInteractive)
 
     private var tapID: AudioObjectID = 0
     private var aggregateID: AudioObjectID = 0
@@ -68,6 +71,22 @@ final class TapController {
         var status = AudioHardwareCreateProcessTap(description, &newTapID)
         guard status == noErr, newTapID != kAudioObjectUnknown else {
             throw TapError.coreAudio("Creating the process tap", status)
+        }
+
+        if let format = processTapFormat(newTapID) {
+            let supported = format.mFormatID == kAudioFormatLinearPCM
+                && (format.mFormatFlags & kAudioFormatFlagIsFloat) != 0
+                && (format.mFormatFlags & kAudioFormatFlagIsNonInterleaved) == 0
+                && format.mBitsPerChannel == 32
+                && format.mChannelsPerFrame <= 2
+            guard supported else {
+                AudioHardwareDestroyProcessTap(newTapID)
+                throw TapError.unsupportedFormat(
+                    "id=\(format.mFormatID) flags=\(format.mFormatFlags) bits=\(format.mBitsPerChannel) channels=\(format.mChannelsPerFrame)"
+                )
+            }
+        } else {
+            log.warning("Could not read the tap format; assuming interleaved Float32.")
         }
 
         let aggregateDescription: [String: Any] = [
@@ -162,53 +181,24 @@ final class TapController {
         callbackCount &+= 1
 
         let inputs = UnsafeMutableAudioBufferListPointer(UnsafeMutablePointer(mutating: inputBufferList))
-        let outputs = UnsafeMutableAudioBufferListPointer(outputBufferList)
-
-        guard !inputs.isEmpty, !outputs.isEmpty else {
+        guard let tapBuffer = inputs.last,
+              let plan = TapRenderPlan.make(
+                  inputBufferCount: inputs.count,
+                  tapInputChannels: Int(tapBuffer.mNumberChannels)
+              )
+        else {
             TapController.zero(outputBufferList)
             return
         }
 
-        let target = targetGain
-        var gain = currentGain
-        let coefficient = ramp
-
-        for outputIndex in 0..<outputs.count {
-            let outputBuffer = outputs[outputIndex]
-            guard let outputData = outputBuffer.mData else { continue }
-
-            // The tap stream is appended after the output device's own input streams.
-            let inputIndex = inputs.count - outputs.count + outputIndex
-            guard inputIndex >= 0, inputIndex < inputs.count else {
-                memset(outputData, 0, Int(outputBuffer.mDataByteSize))
-                continue
-            }
-
-            let inputBuffer = inputs[inputIndex]
-            guard let inputData = inputBuffer.mData else {
-                memset(outputData, 0, Int(outputBuffer.mDataByteSize))
-                continue
-            }
-
-            let inputChannels = max(1, Int(inputBuffer.mNumberChannels))
-            let outputChannels = max(1, Int(outputBuffer.mNumberChannels))
-            let inputFrames = Int(inputBuffer.mDataByteSize) / (MemoryLayout<Float>.size * inputChannels)
-            let outputFrames = Int(outputBuffer.mDataByteSize) / (MemoryLayout<Float>.size * outputChannels)
-
-            AudioMath.process(
-                input: inputData.assumingMemoryBound(to: Float.self),
-                inputChannels: inputChannels,
-                inputFrames: inputFrames,
-                output: outputData.assumingMemoryBound(to: Float.self),
-                outputChannels: outputChannels,
-                outputFrames: outputFrames,
-                targetGain: target,
-                currentGain: &gain,
-                rampCoefficient: coefficient
-            )
-        }
-
-        currentGain = gain
+        TapRender.render(
+            input: inputBufferList,
+            output: outputBufferList,
+            plan: plan,
+            targetGain: targetGain,
+            currentGain: &currentGain,
+            rampCoefficient: ramp
+        )
     }
 
     private static func zero(_ bufferList: UnsafeMutablePointer<AudioBufferList>) {
@@ -220,6 +210,16 @@ final class TapController {
     }
 
     // MARK: - Core Audio details
+
+    private func processTapFormat(_ tapID: AudioObjectID) -> AudioStreamBasicDescription? {
+        var address = AudioSystem.propertyAddress(kAudioTapPropertyFormat)
+        var format = AudioStreamBasicDescription()
+        var size = UInt32(MemoryLayout<AudioStreamBasicDescription>.size)
+        guard AudioObjectGetPropertyData(tapID, &address, 0, nil, &size, &format) == noErr else {
+            return nil
+        }
+        return format
+    }
 
     private func nominalSampleRate(_ deviceID: AudioObjectID) -> Double {
         var address = AudioSystem.propertyAddress(kAudioDevicePropertyNominalSampleRate, scope: AudioSystem.scopeGlobal)
