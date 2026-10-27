@@ -207,6 +207,11 @@ microphone audio. Turn the feature off from the speaker-with-one-wave menu in
 the panel footer. Screen recordings and voice memos also count as microphone
 use.
 
+### Manual test checklist
+
+Hardware-dependent checks (routing, Bluetooth, calls, sleep/wake, long runs) are
+listed in [docs/manual-test.md](docs/manual-test.md).
+
 ### Troubleshooting
 
 - **No apps listed:** start playback in the app and check the menu bar icon;
