@@ -333,7 +333,7 @@ struct PanelView: View {
             .menuStyle(.borderlessButton)
             .menuIndicator(.hidden)
             .fixedSize()
-            .help("Duck other apps while the microphone is in use")
+            .help("Duck other apps while a call app uses the microphone")
             .accessibilityLabel("Call ducking")
             if !engine.hiddenApps.isEmpty {
                 Menu {

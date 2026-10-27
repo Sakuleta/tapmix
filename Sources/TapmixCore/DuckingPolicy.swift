@@ -1,7 +1,8 @@
 import Foundation
 
-/// Decides when other apps should duck. The engine only tells it whether any
-/// input device is running; no microphone audio is read.
+/// Decides when other apps should duck. The engine reports which processes
+/// capture input; no microphone audio is read. Only call apps and browsers
+/// trigger ducking, so recorders and utilities that keep the mic open do not.
 public struct DuckingPolicy {
     public static let duckDelay: TimeInterval = 1.0
     public static let releaseDelay: TimeInterval = 1.5
@@ -19,6 +20,16 @@ public struct DuckingPolicy {
         "com.cisco.webexmeetingsapp"
     ]
 
+    /// Browsers can host web meetings; their microphone use counts as a call.
+    public static let browserBundleIDs: Set<String> = [
+        "com.apple.Safari",
+        "com.google.Chrome",
+        "com.brave.Browser",
+        "com.microsoft.edgemac",
+        "org.mozilla.firefox",
+        "company.thebrowser.Browser"
+    ]
+
     private var micStartedAt: Date?
     private var micStoppedAt: Date?
     private var callBundleID: String?
@@ -27,12 +38,12 @@ public struct DuckingPolicy {
     public init() {}
 
     /// Returns the new ducking state.
-    public mutating func update(micActive: Bool, frontmost: String?, now: Date) -> Bool {
-        if micActive {
+    public mutating func update(inputBundleIDs: Set<String>, now: Date) -> Bool {
+        if let owner = Self.callOwner(in: inputBundleIDs) {
             micStoppedAt = nil
             if micStartedAt == nil {
                 micStartedAt = now
-                callBundleID = frontmost
+                callBundleID = owner
             }
             if !isDucking, let startedAt = micStartedAt,
                now.timeIntervalSince(startedAt) >= Self.duckDelay {
@@ -58,9 +69,14 @@ public struct DuckingPolicy {
         return isDucking
     }
 
-    /// The call app is never ducked, nor is a known conferencing app.
+    /// The active call app is never ducked, nor is a known conferencing app.
     public func isExempt(bundleID: String) -> Bool {
         Self.knownCallBundleIDs.contains(bundleID) || callBundleID == bundleID
+    }
+
+    private static func callOwner(in bundleIDs: Set<String>) -> String? {
+        bundleIDs.intersection(knownCallBundleIDs).min()
+            ?? bundleIDs.intersection(browserBundleIDs).min()
     }
 
     public mutating func reset() {

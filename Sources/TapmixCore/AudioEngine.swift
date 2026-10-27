@@ -416,8 +416,7 @@ public final class AudioEngine: ObservableObject {
 
         let wasDucking = isDucking
         isDucking = ducking.update(
-            micActive: AudioSystem.inputIsActive(),
-            frontmost: NSWorkspace.shared.frontmostApplication?.bundleIdentifier,
+            inputBundleIDs: AudioSystem.inputBundleIDs(),
             now: Date()
         )
         if wasDucking != isDucking {

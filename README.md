@@ -20,8 +20,8 @@ no kernel extension, no virtual audio driver, and no proprietary code.
   headphones, or leave both on the system default
 - **Global hotkeys and a volume HUD** — change the audible (or frontmost) app
   from any space without opening the panel
-- **Automatic call ducking** — while the microphone is in use, other apps drop
-  to 30% and return when the call ends
+- **Automatic call ducking** — while a call app captures the microphone, other
+  apps drop to 30% and return when the call ends
 - **Preferred output** — pin a device and Tapmix switches back to it when it
   reconnects
 - **Night mode** per app — lift quiet dialogue and tame loud peaks
@@ -237,16 +237,17 @@ Choose **Follow macOS** to turn the preference off.
 
 ### Calls
 
-When any app starts using the microphone, Tapmix waits a second, then lowers
-every other app to 30%. The conferencing app (Zoom, Teams, FaceTime, Discord,
-Slack, WhatsApp, Webex) and the app that was frontmost when the microphone
-started are never ducked. Everything returns to its previous level 1.5 seconds
-after the microphone is released.
+When a conferencing app starts capturing the microphone, Tapmix waits a second,
+then lowers every other app to 30%. Zoom, Teams, FaceTime, Discord, Slack,
+WhatsApp and Webex count as calls, as do browsers for web meetings, and the
+active call app is never ducked. Everything returns to its previous level 1.5
+seconds after the microphone is released.
 
-Tapmix only asks the HAL whether an input device is running; it never reads
-microphone audio. Turn the feature off from the speaker-with-one-wave menu in
-the panel footer. Screen recordings and voice memos also count as microphone
-use.
+Tapmix asks Core Audio which processes capture input; it never reads
+microphone audio. Recorders and utilities that hold the microphone open (Hex,
+QuickTime, Voice Memos, virtual audio drivers) do not start ducking, so music
+keeps its level while they run. Turn the feature off from the
+speaker-with-one-wave menu in the panel footer.
 
 ### Manual test checklist
 
@@ -326,8 +327,8 @@ Tests/TapmixTests/
 - **HAL listeners plus a safety poll.** Device, default-output and process
   changes arrive immediately; a one-second timer remains for ducking and as a
   fallback, and meters update at 10 Hz.
-- **Call detection is microphone-based.** Any recording app can trigger
-  ducking, and a browser-based call exempts the whole browser.
+- **Call detection is call-app based.** Recorders that hold the microphone do
+  not duck the mix, and a browser-based call exempts the whole browser.
 - **Device priority reacts to connections only.** It does not fight a manual
   output switch while the preferred device stays connected.
 - **Night mode is a compressor, not loudness matching.** Heavy use can pump;
