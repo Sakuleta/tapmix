@@ -31,6 +31,7 @@ no kernel extension, no virtual audio driver, and no proprietary code.
 - **Per-app balance and mono downmix** — shift left/right or fold to one channel
 - **Saved mixes** — name a scene and restore levels, EQ and routing later
 - **Custom EQ presets** — save bands plus AutoEQ filters and reuse them on any app
+- **EQ response curve** — see the combined band/AutoEQ response while editing
 - **Launch at login** — start Tapmix with the Mac from the gear menu
 - **Pinned apps** stay visible while idle; **hide** an app to remove it from
   Tapmix entirely; **search** filters the list
@@ -137,6 +138,12 @@ open "tapmix://set-route?app=com.spotify.client&device=DEVICE-UID"
 
 `volume` is 0-200, `boost` is 1-4, and an empty `device` returns the app to
 the system default. The same strings work in Shortcuts and Raycast.
+
+### EQ response
+
+The graph above the bands plots the combined 10-band and AutoEQ response from
+20 Hz to 20 kHz, with the zero line in the middle and ±12 dB grid lines. It
+updates while a slider moves.
 
 ### EQ presets
 

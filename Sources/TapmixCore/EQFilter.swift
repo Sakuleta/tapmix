@@ -1,6 +1,6 @@
 import Foundation
 
-public struct EQFilter: Codable, Equatable {
+public struct EQFilter: Codable, Equatable, Sendable {
     public enum Kind: String, Codable {
         case peaking = "PK"
         case lowShelf = "LSC"

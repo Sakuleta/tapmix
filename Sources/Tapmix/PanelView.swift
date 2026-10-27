@@ -657,6 +657,8 @@ private struct EQPanel: View {
                 .fixedSize()
             }
 
+            EQCurveView(settings: settings)
+
             HStack {
                 Toggle("Night mode", isOn: Binding(
                     get: { nightMode },
@@ -831,5 +833,63 @@ private struct SearchField: NSViewRepresentable {
             guard let field = notification.object as? NSSearchField else { return }
             text.wrappedValue = field.stringValue
         }
+    }
+}
+
+private struct EQCurveView: View {
+    let settings: EQSettings
+
+    var body: some View {
+        ZStack {
+            EQGridShape()
+                .stroke(Color.primary.opacity(0.08), lineWidth: 0.5)
+            EQCurveShape(settings: settings)
+                .stroke(Color.accentColor, lineWidth: 1.5)
+        }
+        .frame(width: 276, height: 72)
+        .background(
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(Color.primary.opacity(0.04))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .stroke(Color.primary.opacity(0.06), lineWidth: 0.5)
+        )
+        .accessibilityLabel("EQ response")
+    }
+}
+
+private struct EQGridShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        for level in [-12, 0, 12] {
+            let y = rect.midY - CGFloat(level) / 36 * rect.height
+            path.move(to: CGPoint(x: rect.minX, y: y))
+            path.addLine(to: CGPoint(x: rect.maxX, y: y))
+        }
+        return path
+    }
+}
+
+private struct EQCurveShape: Shape {
+    let settings: EQSettings
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let points = EQResponse.points(for: settings)
+        guard points.count > 1 else { return path }
+
+        for (index, decibels) in points.enumerated() {
+            let x = rect.minX + rect.width * CGFloat(index) / CGFloat(points.count - 1)
+            let clamped = min(max(CGFloat(decibels), -18), 18)
+            let y = rect.midY - clamped / 36 * rect.height
+            let point = CGPoint(x: x, y: y)
+            if index == 0 {
+                path.move(to: point)
+            } else {
+                path.addLine(to: point)
+            }
+        }
+        return path
     }
 }
