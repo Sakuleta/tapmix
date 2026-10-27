@@ -68,13 +68,17 @@ final class AudioCatalogTests: XCTestCase {
         processes: [AudioProcess],
         running: [RunningAppDescriptor],
         levels: [String: AppLevel] = [:],
-        active: Set<String> = []
+        active: Set<String> = [],
+        pinned: Set<String> = [],
+        ignored: Set<String> = []
     ) -> [AppGroup] {
         AudioCatalog.groups(
             processes: processes,
             running: running,
             levels: levels,
-            activeBundleIDs: active
+            activeBundleIDs: active,
+            pinnedBundleIDs: pinned,
+            ignoredBundleIDs: ignored
         )
     }
 
@@ -208,6 +212,58 @@ final class AudioCatalogTests: XCTestCase {
             running: [zebra, alpha]
         )
         XCTAssertEqual(result.map(\.name), ["Alpha", "Zebra"])
+    }
+
+    func testPinnedIdleAppAppears() {
+        let result = groups(
+            processes: [process(1, pid: 5, bundleID: "com.brave.Browser", playing: false)],
+            running: [braveHost],
+            pinned: ["com.brave.Browser"]
+        )
+
+        XCTAssertEqual(result.count, 1)
+        XCTAssertTrue(result[0].pinned)
+        XCTAssertFalse(result[0].isPlaying)
+        XCTAssertTrue(result[0].row.pinned)
+    }
+
+    func testIgnoredAppIsHidden() {
+        let result = groups(
+            processes: [process(1, pid: 5, bundleID: "com.brave.Browser")],
+            running: [braveHost],
+            levels: ["com.brave.Browser": AppLevel(volume: 0.5)],
+            active: ["com.brave.Browser"],
+            ignored: ["com.brave.Browser"]
+        )
+        XCTAssertTrue(result.isEmpty)
+    }
+
+    func testPinnedAppsSortFirst() {
+        let alpha = descriptor(
+            pid: 7,
+            bundleID: "com.example.alpha",
+            name: "Alpha",
+            regular: true,
+            bundlePath: "/Applications/Alpha.app",
+            executablePath: "/Applications/Alpha.app/Contents/MacOS/Alpha"
+        )
+        let zebra = descriptor(
+            pid: 8,
+            bundleID: "com.example.zebra",
+            name: "Zebra",
+            regular: true,
+            bundlePath: "/Applications/Zebra.app",
+            executablePath: "/Applications/Zebra.app/Contents/MacOS/Zebra"
+        )
+        let result = groups(
+            processes: [
+                process(1, pid: 7, bundleID: "com.example.alpha"),
+                process(2, pid: 8, bundleID: "com.example.zebra")
+            ],
+            running: [alpha, zebra],
+            pinned: ["com.example.zebra"]
+        )
+        XCTAssertEqual(result.map(\.name), ["Zebra", "Alpha"])
     }
 
     func testIdleAppWithoutLevelOrTapIsHidden() {

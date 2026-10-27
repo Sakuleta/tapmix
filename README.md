@@ -11,7 +11,10 @@ no kernel extension, no virtual audio driver, and no proprietary code.
 ## Features (v0.1)
 
 - **Per-app volume** from 0% to 200% (100% is unity gain)
+- **Per-app boost** from 1x to 4x, protected by a 5 ms lookahead limiter
 - **Per-app mute** with a 20 ms click-free gain ramp
+- **Pinned apps** stay visible while idle; **hide** an app to remove it from
+  Tapmix entirely; **search** filters the list
 - **Output volume and mute** for the current default output device
 - **Automatic app discovery** — apps appear when they start playing and stay
   while they have an active tap or a stored level
@@ -143,8 +146,8 @@ Tests/TapmixTests/
 
 - **Stereo only.** Multichannel outputs are handled, but the tap is a stereo
   mixdown, so 5.1/7.1 content is downmixed by Core Audio.
-- **Boost clips.** Above 100%, samples are hard-clamped; there is no lookahead
-  limiter yet.
+- **Boost is limited, not loudness-matched.** Up to 8x total gain is protected
+  by a lookahead limiter; very dynamic material can still pump.
 - **Per-process, not per-app.** A browser tab cannot be controlled separately
   from another tab in the same browser; all processes belonging to one host app
   share a slider.
@@ -160,7 +163,7 @@ Tests/TapmixTests/
 ## Roadmap
 
 1. Per-app output device routing (aggregate per target device)
-2. 10-band EQ and boost presets with a soft limiter
+2. 10-band EQ, presets and loudness matching
 3. HAL listeners instead of polling; hotplug and sample-rate handling
 4. Global hotkeys and a volume HUD
 5. Pinned/active app list and ignore list

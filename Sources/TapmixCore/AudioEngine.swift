@@ -12,19 +12,22 @@ public final class AudioEngine: ObservableObject {
     @Published public private(set) var outputVolume: Double = 0
     @Published public private(set) var outputMuted = false
     @Published public private(set) var errorMessage: String?
+    @Published public private(set) var hiddenApps: [HiddenApp] = []
 
     /// Set by the panel while the output slider is being dragged so polling does not fight it.
     public var isEditingOutputVolume = false
 
     private let store: LevelStore
+    private let preferences: AppPreferences
     private let tapManager = TapManager()
     private var outputUID: String?
     private var outputDeviceID: AudioObjectID = 0
     private var timer: Timer?
     private var started = false
 
-    init(store: LevelStore = LevelStore()) {
+    init(store: LevelStore = LevelStore(), preferences: AppPreferences = AppPreferences()) {
         self.store = store
+        self.preferences = preferences
     }
 
     // MARK: - Lifecycle
@@ -65,6 +68,24 @@ public final class AudioEngine: ObservableObject {
         store.set(level, for: bundleID)
         tapManager.setGain(level.gain, for: bundleID)
         updateRow(bundleID, volume: level.volume)
+    }
+
+    public func setPinned(_ bundleID: String, _ pinned: Bool, name: String) {
+        var preference = preferences.preference(for: bundleID)
+        preference.pinned = pinned
+        preference.name = name
+        preferences.set(preference, for: bundleID)
+        refresh()
+    }
+
+    public func setIgnored(_ bundleID: String, _ ignored: Bool, name: String? = nil) {
+        var preference = preferences.preference(for: bundleID)
+        preference.ignored = ignored
+        if let name {
+            preference.name = name
+        }
+        preferences.set(preference, for: bundleID)
+        refresh()
     }
 
     public func setBoost(_ bundleID: String, _ boost: Float) {
@@ -140,7 +161,9 @@ public final class AudioEngine: ObservableObject {
             processes: processes,
             running: running,
             levels: store.allLevels,
-            activeBundleIDs: tapManager.activeBundleIDs
+            activeBundleIDs: tapManager.activeBundleIDs,
+            pinnedBundleIDs: preferences.pinnedBundleIDs,
+            ignoredBundleIDs: preferences.ignoredBundleIDs
         )
 
         for group in groups {
@@ -170,6 +193,10 @@ public final class AudioEngine: ObservableObject {
         }
 
         apps = groups.map(\.row)
+        hiddenApps = preferences.all
+            .filter { $0.value.ignored }
+            .map { HiddenApp(bundleID: $0.key, name: $0.value.name ?? $0.key) }
+            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
 
         switch tapManager.health {
         case .ok:

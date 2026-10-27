@@ -4,6 +4,7 @@ import SwiftUI
 
 struct PanelView: View {
     @ObservedObject var engine: AudioEngine
+    @State private var search = ""
 
     var body: some View {
         VStack(spacing: 0) {
@@ -24,8 +25,13 @@ struct PanelView: View {
         .background(Color(nsColor: .windowBackgroundColor))
     }
 
+    private var filteredApps: [AppRow] {
+        guard !search.isEmpty else { return engine.apps }
+        return engine.apps.filter { $0.name.localizedCaseInsensitiveContains(search) }
+    }
+
     private var panelHeight: CGFloat {
-        let visibleRows = min(max(engine.apps.count, 1), 6)
+        let visibleRows = min(max(filteredApps.count, 1), 6)
         return min(480, 240 + CGFloat(visibleRows) * 52)
     }
 
@@ -110,13 +116,18 @@ struct PanelView: View {
 
     private var appSection: some View {
         VStack(spacing: 0) {
-            HStack {
+            HStack(spacing: 8) {
                 Text("APPS")
                     .font(.system(size: 10, weight: .semibold))
                     .tracking(0.8)
                     .foregroundStyle(.secondary)
                 Spacer()
-                Text("\(engine.apps.count)")
+                TextField("Search", text: $search)
+                    .textFieldStyle(.roundedBorder)
+                    .controlSize(.mini)
+                    .frame(width: 96)
+                    .accessibilityLabel("Search apps")
+                Text("\(filteredApps.count)")
                     .font(.system(size: 10, design: .monospaced))
                     .foregroundStyle(.tertiary)
             }
@@ -138,10 +149,15 @@ struct PanelView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding(.horizontal, 24)
+            } else if filteredApps.isEmpty {
+                Text("No matching apps")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView {
                     LazyVStack(spacing: 4) {
-                        ForEach(engine.apps) { app in
+                        ForEach(filteredApps) { app in
                             AppRowView(app: app, engine: engine)
                         }
                     }
@@ -185,6 +201,23 @@ struct PanelView: View {
                 .font(.system(size: 10))
                 .foregroundStyle(.tertiary)
             Spacer()
+            if !engine.hiddenApps.isEmpty {
+                Menu {
+                    ForEach(engine.hiddenApps) { app in
+                        Button("Show \(app.name)") {
+                            engine.setIgnored(app.bundleID, false)
+                        }
+                    }
+                } label: {
+                    Label("\(engine.hiddenApps.count)", systemImage: "eye.slash")
+                        .font(.system(size: 10))
+                }
+                .menuStyle(.borderlessButton)
+                .menuIndicator(.hidden)
+                .fixedSize()
+                .help("Hidden apps")
+                .accessibilityLabel("Hidden apps")
+            }
             Button("Quit") {
                 NSApplication.shared.terminate(nil)
             }
@@ -228,6 +261,13 @@ private struct AppRowView: View {
                         .lineLimit(1)
 
                     Spacer(minLength: 4)
+
+                    if app.pinned {
+                        Image(systemName: "star.fill")
+                            .font(.system(size: 8))
+                            .foregroundStyle(.yellow)
+                            .accessibilityLabel("Pinned")
+                    }
 
                     Text("\(Int((app.volume * 100).rounded()))%")
                         .font(.system(size: 10, design: .monospaced))
@@ -279,7 +319,7 @@ private struct AppRowView: View {
                         in: 0 ... 2
                     )
                     .controlSize(.mini)
-                    .tint(app.volume > 1 ? .orange : .accentColor)
+                    .tint(app.volume > 1 || app.boost > 1 ? .orange : .accentColor)
                     .accessibilityLabel("Volume for \(app.name)")
                     .accessibilityValue("\(Int((app.volume * 100).rounded())) percent")
                 }
@@ -291,7 +331,16 @@ private struct AppRowView: View {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .fill(Color.primary.opacity(app.isPlaying ? 0.065 : 0.03))
         )
-        .opacity(app.isPlaying ? 1 : 0.6)
+        .opacity(app.isPlaying || app.pinned ? 1 : 0.6)
+        .contextMenu {
+            Button(app.pinned ? "Unpin" : "Pin to Top") {
+                engine.setPinned(app.bundleID, !app.pinned, name: app.name)
+            }
+            Divider()
+            Button("Hide from Tapmix") {
+                engine.setIgnored(app.bundleID, true, name: app.name)
+            }
+        }
     }
 
     private var icon: some View {
