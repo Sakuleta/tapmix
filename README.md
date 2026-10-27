@@ -35,6 +35,7 @@ no kernel extension, no virtual audio driver, and no proprietary code.
 - **Local AutoEQ catalog** — point Tapmix at an AutoEQ results folder and search it
 - **On-demand update check** — ask the gear menu to compare against the latest GitHub release
 - **WAV recording** — record the processed audio of an app from its context menu
+- **Audio Unit effects** — host any installed AUv2 effect on one app's output
 - **Launch at login** — start Tapmix with the Mac from the gear menu
 - **Pinned apps** stay visible while idle; **hide** an app to remove it from
   Tapmix entirely; **search** filters the list
@@ -176,6 +177,18 @@ stereo WAV. **Stop recording** is in the same menu and a red dot marks the row.
 Apps with several audio processes get one file per process (`App-<id>.wav`).
 A route change replaces the tap and ends that app's recording; start it again
 after the switch.
+
+### Audio Unit effects
+
+Right-click an app row → **Audio Unit Effect…** and pick an installed AUv2
+effect from the searchable list (Audio Units are listed by component name). Tapmix hosts the unit inside
+the tap's render callback with the Audio Unit render API, so no `AVAudioEngine`
+or `AUGraph` sits in the path. The selection is stored per app and restored on
+the next launch and after a route change.
+
+The effect runs after volume, EQ, night mode, balance and the limiter, and its
+output is clamped to full scale. Choose **None** to remove it. Third-party units
+load inside Tapmix, so an unstable plugin can affect the app.
 
 ### Homebrew
 

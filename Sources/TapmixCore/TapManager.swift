@@ -42,6 +42,7 @@ final class TapManager {
     private var nightModes: [String: Bool] = [:]
     private var balances: [String: Float] = [:]
     private var monos: [String: Bool] = [:]
+    private var audioUnits: [String: AudioUnitSelection] = [:]
     private var tapOutputs: [AudioObjectID: String] = [:]
     private(set) var health: Health = .ok
 
@@ -94,6 +95,17 @@ final class TapManager {
         monos[bundleID] = enabled
         for tap in taps.values where tap.bundleID == bundleID {
             tap.setMono(enabled)
+        }
+    }
+
+    func setAudioUnit(_ selection: AudioUnitSelection?, for bundleID: String) {
+        if let selection {
+            audioUnits[bundleID] = selection
+        } else {
+            audioUnits.removeValue(forKey: bundleID)
+        }
+        for tap in taps.values where tap.bundleID == bundleID {
+            tap.setAudioUnit(selection)
         }
     }
 
@@ -164,6 +176,7 @@ final class TapManager {
                 tap.setNightMode(nightModes[tap.bundleID] ?? false)
                 tap.setBalance(balances[tap.bundleID] ?? 0)
                 tap.setMono(monos[tap.bundleID] ?? false)
+                tap.setAudioUnit(audioUnits[tap.bundleID])
                 continue
             }
             if let failure = failures[id], now() < failure.retryAt {
@@ -179,6 +192,7 @@ final class TapManager {
                 replacement.setNightMode(nightModes[desiredTap.bundleID] ?? false)
                 replacement.setBalance(balances[desiredTap.bundleID] ?? 0)
                 replacement.setMono(monos[desiredTap.bundleID] ?? false)
+                replacement.setAudioUnit(audioUnits[desiredTap.bundleID])
 
                 if let existing {
                     existing.setGain(0)

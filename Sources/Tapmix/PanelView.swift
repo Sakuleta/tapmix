@@ -391,6 +391,8 @@ private struct AppRowView: View {
     let app: AppRow
     @ObservedObject var engine: AudioEngine
     @State private var showEQ = false
+    @State private var showingAudioUnits = false
+    @State private var audioUnits: [AudioUnitInfo] = []
 
     var body: some View {
         HStack(spacing: 10) {
@@ -555,8 +557,21 @@ private struct AppRowView: View {
                 toggleRecording()
             }
             Divider()
+            Button(app.audioUnit == nil ? "Audio Unit Effect…" : "Audio Unit Effect (on)…") {
+                audioUnits = AudioUnitCatalog.effects()
+                showingAudioUnits = true
+            }
+            Divider()
             Button("Hide from Tapmix") {
                 engine.setIgnored(app.bundleID, true, name: app.name)
+            }
+        }
+        .sheet(isPresented: $showingAudioUnits) {
+            AudioUnitPickerView(
+                units: audioUnits,
+                selected: app.audioUnit
+            ) { selection in
+                engine.setAudioUnit(app.bundleID, selection)
             }
         }
     }
@@ -1009,5 +1024,71 @@ private struct AutoEQCatalogView: View {
         }
         .padding(14)
         .frame(width: 420, height: 460)
+    }
+}
+
+private struct AudioUnitPickerView: View {
+    let units: [AudioUnitInfo]
+    let selected: AudioUnitSelection?
+    let onSelect: (AudioUnitSelection?) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var query = ""
+
+    private var filtered: [AudioUnitInfo] {
+        guard !query.isEmpty else { return units }
+        return units.filter { $0.name.localizedCaseInsensitiveContains(query) }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("Audio Unit Effect")
+                    .font(.headline)
+                Spacer()
+                Button("Close") { dismiss() }
+            }
+
+            TextField("Search installed effects", text: $query)
+                .textFieldStyle(.roundedBorder)
+
+            List {
+                Button {
+                    onSelect(nil)
+                    dismiss()
+                } label: {
+                    HStack {
+                        Text("None")
+                        Spacer()
+                        if selected == nil {
+                            Image(systemName: "checkmark")
+                        }
+                    }
+                }
+                .buttonStyle(.plain)
+
+                ForEach(filtered) { unit in
+                    Button {
+                        onSelect(unit.selection)
+                        dismiss()
+                    } label: {
+                        HStack {
+                            Text(unit.name)
+                            Spacer()
+                            if unit.selection == selected {
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
+            Text("\(filtered.count) of \(units.count) installed")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .padding(14)
+        .frame(width: 440, height: 470)
     }
 }
