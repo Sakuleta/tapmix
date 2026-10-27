@@ -66,7 +66,7 @@ enum AppResolver {
             host = direct
         }
 
-        if host == nil, let executable = direct?.executablePath {
+        if host == nil, let executable = direct?.executablePath ?? process.executablePath {
             host = running.first { app in
                 guard !app.isProhibited, let path = app.bundlePath else { return false }
                 return executable == path || executable.hasPrefix(path + "/")
