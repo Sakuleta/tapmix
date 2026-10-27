@@ -30,7 +30,12 @@ cp "$BIN" "$APP/Contents/MacOS/Tapmix"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 
-codesign --force --sign "$IDENTITY" --identifier com.mardinli.tapmix "$APP"
+if [[ "$IDENTITY" == "Developer ID Application"* ]]; then
+    codesign --force --sign "$IDENTITY" --identifier com.mardinli.tapmix \
+        --options runtime --timestamp "$APP"
+else
+    codesign --force --sign "$IDENTITY" --identifier com.mardinli.tapmix "$APP"
+fi
 
 echo "Built $APP (signed with: $IDENTITY)"
 echo "Run with: open $APP"
