@@ -21,7 +21,8 @@ taps. No kernel extension, no virtual audio driver, no third-party dependencies.
 - `TapRender` — frame-major buffer copy/gain; the realtime seam.
 - `EQProcessor` — ten peaking biquads per channel, coefficients built off-thread.
 - `EQSettings` — per-app bands and presets; persisted in `AppLevel`.
-- `AudioEngine` — 1s poll, UI state, user actions.
+- `AudioEngine` — 1s poll, UI state, user actions, hotkey target.
+- `HotKeyCenter`/`HUDController` — global Carbon hotkeys and the volume HUD.
 - `PanelView`/`TapmixApp` — SwiftUI menu bar.
 
 ## Realtime invariants

@@ -18,6 +18,8 @@ no kernel extension, no virtual audio driver, and no proprietary code.
   and Loudness presets
 - **Per-app output routing** — send one app to the speakers and another to
   headphones, or leave both on the system default
+- **Global hotkeys and a volume HUD** — change the audible (or frontmost) app
+  from any space without opening the panel
 - **Pinned apps** stay visible while idle; **hide** an app to remove it from
   Tapmix entirely; **search** filters the list
 - **Output volume and mute** for the current default output device
@@ -96,6 +98,16 @@ build; do not disable SIP or modify system security settings.
   kept for an active tap or a stored level.
 - Taps are created on first playback; an existing tap is kept while the process
   lives.
+
+### Hotkeys
+
+- `⌥⌘↑` / `⌥⌘↓` — raise or lower the active app by 5%. The active app is the
+  one currently producing audio; if nothing plays, the frontmost app that
+  Tapmix lists.
+- `⌥⌘M` — mute or unmute that app.
+- A small HUD appears near the top of the screen with the app name and level.
+
+Hotkeys are fixed for now; they need no Accessibility permission.
 
 ### Troubleshooting
 
@@ -177,7 +189,7 @@ Tests/TapmixTests/
 1. Device priority and automatic restore when hardware reconnects
 2. Loudness matching and AutoEQ headphone correction
 3. HAL listeners instead of polling; hotplug and sample-rate handling
-4. Global hotkeys and a volume HUD
+4. Configurable hotkeys and media-key handling
 5. Pinned/active app list and ignore list
 6. Notarized, Developer ID-signed release
 

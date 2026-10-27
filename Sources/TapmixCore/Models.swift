@@ -130,6 +130,20 @@ public struct AppRow: Identifiable, Equatable {
     }
 }
 
+public struct ActiveVolumeState: Equatable {
+    public let bundleID: String
+    public let name: String
+    public let volume: Float
+    public let muted: Bool
+
+    public init(bundleID: String, name: String, volume: Float, muted: Bool) {
+        self.bundleID = bundleID
+        self.name = name
+        self.volume = volume
+        self.muted = muted
+    }
+}
+
 /// An app the person asked Tapmix to leave alone; listed only so it can be restored.
 public struct HiddenApp: Identifiable, Equatable {
     public var id: String { bundleID }
