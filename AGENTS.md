@@ -23,6 +23,7 @@ taps. No kernel extension, no virtual audio driver, no third-party dependencies.
 - `EQSettings` — per-app bands and presets; persisted in `AppLevel`.
 - `AudioEngine` — 1s poll, UI state, user actions, hotkey target.
 - `DuckingPolicy` — microphone-activity hysteresis; never reads audio.
+- `DevicePriority` — switches to the preferred output when it reconnects.
 - `HotKeyCenter`/`HUDController` — global Carbon hotkeys and the volume HUD.
 - `PanelView`/`TapmixApp` — SwiftUI menu bar.
 

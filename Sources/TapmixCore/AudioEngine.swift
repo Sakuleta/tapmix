@@ -15,6 +15,7 @@ public final class AudioEngine: ObservableObject {
     @Published public private(set) var hiddenApps: [HiddenApp] = []
     @Published public private(set) var outputDevices: [AudioDevice] = []
     @Published public private(set) var isDucking = false
+    public private(set) var preferredOutputUID: String?
 
     /// Set by the panel while the output slider is being dragged so polling does not fight it.
     public var isEditingOutputVolume = false
@@ -31,11 +32,14 @@ public final class AudioEngine: ObservableObject {
     private var ducking = DuckingPolicy()
     public private(set) var duckingEnabled: Bool
     private static let duckingKey = "com.mardinli.tapmix.duckingEnabled"
+    private static let preferredOutputKey = "com.mardinli.tapmix.preferredOutputUID"
+    private var knownOutputUIDs: Set<String> = []
 
     init(store: LevelStore = LevelStore(), preferences: AppPreferences = AppPreferences()) {
         self.store = store
         self.preferences = preferences
         duckingEnabled = UserDefaults.standard.object(forKey: Self.duckingKey) as? Bool ?? true
+        preferredOutputUID = UserDefaults.standard.string(forKey: Self.preferredOutputKey)
     }
 
     // MARK: - Lifecycle
@@ -158,6 +162,18 @@ public final class AudioEngine: ObservableObject {
         setOutputMuted(!outputMuted)
     }
 
+    public func setPreferredOutput(_ uid: String?) {
+        preferredOutputUID = uid
+        UserDefaults.standard.set(uid, forKey: Self.preferredOutputKey)
+
+        if let uid, let device = outputDevices.first(where: { $0.uid == uid }) {
+            AudioSystem.setDefaultOutputDevice(device.objectID)
+            reloadOutput()
+        }
+        knownOutputUIDs = Set(outputDevices.map(\.uid))
+        refresh()
+    }
+
     public func setDuckingEnabled(_ enabled: Bool) {
         duckingEnabled = enabled
         UserDefaults.standard.set(enabled, forKey: Self.duckingKey)
@@ -257,6 +273,22 @@ public final class AudioEngine: ObservableObject {
         }
     }
 
+    private func applyPreferredOutput(devices: [AudioDevice]) {
+        let available = Set(devices.map(\.uid))
+        let newlyAvailable = available.subtracting(knownOutputUIDs)
+        knownOutputUIDs = available
+
+        guard let target = DevicePriority.outputDeviceToActivate(
+            preferredUID: preferredOutputUID,
+            currentUID: outputUID,
+            availableUIDs: available,
+            newlyAvailable: newlyAvailable
+        ), let device = devices.first(where: { $0.uid == target })
+        else { return }
+
+        AudioSystem.setDefaultOutputDevice(device.objectID)
+    }
+
     private func tickMeters() {
         guard started, !apps.isEmpty else { return }
         for index in apps.indices {
@@ -296,6 +328,7 @@ public final class AudioEngine: ObservableObject {
         if devices != outputDevices {
             outputDevices = devices
         }
+        applyPreferredOutput(devices: devices)
         let availableUIDs = Set(devices.map(\.uid))
         let groups = AudioCatalog.groups(
             processes: processes,
