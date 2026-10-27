@@ -10,6 +10,7 @@ struct AppGroup {
     let processObjectIDs: [AudioObjectID]
     let playingProcessObjectIDs: [AudioObjectID]
     let level: AppLevel
+    let pinned: Bool
 
     var row: AppRow {
         AppRow(
@@ -19,7 +20,8 @@ struct AppGroup {
             isPlaying: isPlaying,
             volume: level.volume,
             muted: level.muted,
-            boost: level.boost
+            boost: level.boost,
+            pinned: pinned
         )
     }
 }
@@ -30,7 +32,9 @@ enum AudioCatalog {
         processes: [AudioProcess],
         running: [RunningAppDescriptor],
         levels: [String: AppLevel],
-        activeBundleIDs: Set<String>
+        activeBundleIDs: Set<String>,
+        pinnedBundleIDs: Set<String> = [],
+        ignoredBundleIDs: Set<String> = []
     ) -> [AppGroup] {
         var grouped: [String: [AudioProcess]] = [:]
         var identities: [String: AppIdentity] = [:]
@@ -42,9 +46,12 @@ enum AudioCatalog {
         }
 
         return grouped.compactMap { bundleID, bundleProcesses in
-            guard let identity = identities[bundleID] else { return nil }
+            guard let identity = identities[bundleID], !ignoredBundleIDs.contains(bundleID) else {
+                return nil
+            }
             let playing = bundleProcesses.contains { $0.isPlaying }
-            guard playing || levels[bundleID] != nil || activeBundleIDs.contains(bundleID) else {
+            let pinned = pinnedBundleIDs.contains(bundleID)
+            guard playing || pinned || levels[bundleID] != nil || activeBundleIDs.contains(bundleID) else {
                 return nil
             }
             return AppGroup(
@@ -54,10 +61,14 @@ enum AudioCatalog {
                 isPlaying: playing,
                 processObjectIDs: bundleProcesses.map(\.objectID),
                 playingProcessObjectIDs: bundleProcesses.filter(\.isPlaying).map(\.objectID),
-                level: levels[bundleID] ?? AppLevel()
+                level: levels[bundleID] ?? AppLevel(),
+                pinned: pinned
             )
         }.sorted {
-            $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+            if $0.pinned != $1.pinned {
+                return $0.pinned
+            }
+            return $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
         }
     }
 }

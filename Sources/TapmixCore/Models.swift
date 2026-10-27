@@ -82,6 +82,7 @@ public struct AppRow: Identifiable, Equatable {
     public var volume: Float
     public var muted: Bool
     public var boost: Float
+    public let pinned: Bool
 
     public init(
         bundleID: String,
@@ -90,7 +91,8 @@ public struct AppRow: Identifiable, Equatable {
         isPlaying: Bool,
         volume: Float,
         muted: Bool,
-        boost: Float = 1
+        boost: Float = 1,
+        pinned: Bool = false
     ) {
         self.bundleID = bundleID
         self.name = name
@@ -99,5 +101,18 @@ public struct AppRow: Identifiable, Equatable {
         self.volume = volume
         self.muted = muted
         self.boost = boost
+        self.pinned = pinned
+    }
+}
+
+/// An app the person asked Tapmix to leave alone; listed only so it can be restored.
+public struct HiddenApp: Identifiable, Equatable {
+    public var id: String { bundleID }
+    public let bundleID: String
+    public let name: String
+
+    public init(bundleID: String, name: String) {
+        self.bundleID = bundleID
+        self.name = name
     }
 }
