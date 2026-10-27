@@ -47,6 +47,7 @@ final class TapManagerTests: XCTestCase {
     private var created: [FakeTap] = []
     private var outputUIDs: [String] = []
     private var failing: Set<AudioObjectID> = []
+    private var pendingStops: [@MainActor () -> Void] = []
 
     override func setUp() {
         super.setUp()
@@ -54,6 +55,7 @@ final class TapManagerTests: XCTestCase {
         created = []
         outputUIDs = []
         failing = []
+        pendingStops = []
         manager = TapManager(
             makeTap: { [unowned self] processID, bundleID, outputUID in
                 let tap = FakeTap(
@@ -68,8 +70,18 @@ final class TapManagerTests: XCTestCase {
                 self.outputUIDs.append(outputUID)
                 return tap
             },
-            now: { [unowned self] in self.now }
+            now: { [unowned self] in self.now },
+            schedule: { [unowned self] _, work in
+                self.pendingStops.append(work)
+            }
         )
+    }
+
+    private func runScheduledStops() {
+        while !pendingStops.isEmpty {
+            let work = pendingStops.removeFirst()
+            work()
+        }
     }
 
     private func desired(
@@ -204,9 +216,14 @@ final class TapManagerTests: XCTestCase {
 
         sync([second])
         XCTAssertEqual(created.count, 2)
-        XCTAssertEqual(created[0].stopCount, 1)
+        XCTAssertEqual(created[0].gain, 0)
+        XCTAssertEqual(created[0].stopCount, 0)
+        XCTAssertEqual(created[1].gain, 1)
         XCTAssertEqual(outputUIDs, ["dev-1", "dev-2"])
         XCTAssertEqual(manager.activeProcessIDs, [1])
+
+        runScheduledStops()
+        XCTAssertEqual(created[0].stopCount, 1)
     }
 
     func testRouteChangeRebuildsOnlyThatTap() {
@@ -218,9 +235,15 @@ final class TapManagerTests: XCTestCase {
         sync([a, moved])
 
         XCTAssertEqual(created[0].stopCount, 0)
-        XCTAssertEqual(created[1].stopCount, 1)
+        XCTAssertEqual(created[0].gain, 1)
+        XCTAssertEqual(created[1].gain, 0)
+        XCTAssertEqual(created[1].stopCount, 0)
+        XCTAssertEqual(created[2].gain, 1)
         XCTAssertEqual(created.count, 3)
         XCTAssertEqual(outputUIDs, ["dev-2", "dev-1", "dev-2"])
+
+        runScheduledStops()
+        XCTAssertEqual(created[1].stopCount, 1)
     }
 
     func testGainAppliesToExistingAndNewTaps() {
