@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.2 — 2026-10-27
+
+- A process that captures the microphone plays untouched until the call ends;
+  WhatsApp and other call apps were ducked by their own voice processing and
+  came through very quietly. The row shows a green phone meanwhile
+
 ## 0.3.1 — 2026-10-27
 
 - The panel opens attached to the menu bar; a stale window frame after the app

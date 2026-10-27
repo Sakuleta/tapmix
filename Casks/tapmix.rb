@@ -1,6 +1,6 @@
 cask "tapmix" do
-  version "0.3.1"
-  sha256 "87eb35d6575b5897443fc10d54980722ae2df7ba921263771307a758ab1cee3e"
+  version "0.3.2"
+  sha256 "5eac0a1516fc207157198a4b465dda27671725d23e1bd9dff0436aff493f8655"
 
   url "https://github.com/Sakuleta/tapmix/releases/download/v#{version}/Tapmix-#{version}.zip"
   name "Tapmix"

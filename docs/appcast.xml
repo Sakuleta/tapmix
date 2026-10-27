@@ -6,6 +6,16 @@
         <description>Tapmix release feed</description>
         <language>en</language>
         <item>
+            <title>0.3.2</title>
+            <pubDate>Tue, 27 Oct 2026 21:49:16 +0300</pubDate>
+            <link>https://github.com/Sakuleta/tapmix</link>
+            <sparkle:version>9</sparkle:version>
+            <sparkle:shortVersionString>0.3.2</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
+            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
+            <enclosure url="https://github.com/Sakuleta/tapmix/releases/download/v0.3.2/Tapmix-0.3.2.zip" length="2674053" type="application/octet-stream" sparkle:edSignature="D/uxV/ggisp/IPXOQhEUqQa9eoH3R7ncWEq7+NY7kiutavYMIaoj0tdgo5/tND9c7cdvC+43c7cq+1uhPW0EDA=="/>
+        </item>
+        <item>
             <title>0.3.1</title>
             <pubDate>Tue, 27 Oct 2026 21:06:52 +0300</pubDate>
             <link>https://github.com/Sakuleta/tapmix</link>
@@ -24,16 +34,6 @@
             <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
             <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
             <enclosure url="https://github.com/Sakuleta/tapmix/releases/download/v0.3.0/Tapmix-0.3.0.zip" length="2663740" type="application/octet-stream" sparkle:edSignature="jnn76/1KSutooznaWF0Lv5Dnw/tHScw5OXi63DUrURVbMkTDzg4rKDuQXMQwjwc9bPSUCKL3Q2B5C8LJozhfDg=="/>
-        </item>
-        <item>
-            <title>0.2.4</title>
-            <pubDate>Tue, 27 Oct 2026 18:51:17 +0300</pubDate>
-            <link>https://github.com/Sakuleta/tapmix</link>
-            <sparkle:version>6</sparkle:version>
-            <sparkle:shortVersionString>0.2.4</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
-            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
-            <enclosure url="https://github.com/Sakuleta/tapmix/releases/download/v0.2.4/Tapmix-0.2.4.zip" length="2642621" type="application/octet-stream" sparkle:edSignature="48Z3dKWJ8ZXjikGRkjGYp2/MAH5DPaMu3F/VFPplyVwuODzzd4Xs/EEoNL8i89UUZOJYl2dGg9reET5pesoBAw=="/>
         </item>
     </channel>
 </rss>
