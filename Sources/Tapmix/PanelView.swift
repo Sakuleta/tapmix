@@ -201,6 +201,21 @@ struct PanelView: View {
                 .font(.system(size: 10))
                 .foregroundStyle(.tertiary)
             Spacer()
+            Menu {
+                Toggle("Duck other apps during calls", isOn: Binding(
+                    get: { engine.duckingEnabled },
+                    set: { engine.setDuckingEnabled($0) }
+                ))
+            } label: {
+                Image(systemName: engine.isDucking ? "speaker.wave.1.fill" : "speaker.wave.1")
+                    .font(.system(size: 10))
+                    .foregroundStyle(engine.isDucking ? Color.orange : .secondary)
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .fixedSize()
+            .help("Duck other apps while the microphone is in use")
+            .accessibilityLabel("Call ducking")
             if !engine.hiddenApps.isEmpty {
                 Menu {
                     ForEach(engine.hiddenApps) { app in

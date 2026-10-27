@@ -20,6 +20,8 @@ no kernel extension, no virtual audio driver, and no proprietary code.
   headphones, or leave both on the system default
 - **Global hotkeys and a volume HUD** — change the audible (or frontmost) app
   from any space without opening the panel
+- **Automatic call ducking** — while the microphone is in use, other apps drop
+  to 30% and return when the call ends
 - **Pinned apps** stay visible while idle; **hide** an app to remove it from
   Tapmix entirely; **search** filters the list
 - **Output volume and mute** for the current default output device
@@ -109,6 +111,19 @@ build; do not disable SIP or modify system security settings.
 
 Hotkeys are fixed for now; they need no Accessibility permission.
 
+### Calls
+
+When any app starts using the microphone, Tapmix waits a second, then lowers
+every other app to 30%. The conferencing app (Zoom, Teams, FaceTime, Discord,
+Slack, WhatsApp, Webex) and the app that was frontmost when the microphone
+started are never ducked. Everything returns to its previous level 1.5 seconds
+after the microphone is released.
+
+Tapmix only asks the HAL whether an input device is running; it never reads
+microphone audio. Turn the feature off from the speaker-with-one-wave menu in
+the panel footer. Screen recordings and voice memos also count as microphone
+use.
+
 ### Troubleshooting
 
 - **No apps listed:** start playback in the app and check the menu bar icon;
@@ -179,8 +194,10 @@ Tests/TapmixTests/
   property; some HDMI/USB interfaces expose no software volume and ignore it.
 - **Routing gap.** Switching an app to another output rebuilds its tap, so a
   brief gap is audible; there is no crossfade yet.
-- **Polling discovery.** The app list refreshes every second and meters at
-  10 Hz; HAL listeners are a later optimization.
+- **Polling discovery.** The app list refreshes every second (ducking included)
+  and meters at 10 Hz; HAL listeners are a later optimization.
+- **Call detection is microphone-based.** Any recording app can trigger
+  ducking, and a browser-based call exempts the whole browser.
 - **Signing.** Ad-hoc signing is the fallback; TCC grants do not survive
   rebuilds without the stable identity described above.
 

@@ -81,6 +81,13 @@ enum AudioSystem {
         return device
     }
 
+    static func inputIsActive() -> Bool {
+        let device: AudioObjectID? = read(systemObject, kAudioHardwarePropertyDefaultInputDevice)
+        guard let device, device != kAudioObjectUnknown else { return false }
+        let running: UInt32 = read(device, kAudioDevicePropertyDeviceIsRunningSomewhere) ?? 0
+        return running != 0
+    }
+
     static func deviceUID(_ device: AudioObjectID) -> String? {
         readString(device, kAudioDevicePropertyDeviceUID)
     }
