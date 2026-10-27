@@ -316,6 +316,13 @@ NOTARY_PROFILE=tapmix ./scripts/release.sh
 2. Configurable hotkeys and media-key handling
 3. Notarized, Developer ID-signed release
 
+## Credits
+
+AutoEQ import supports the `ParametricEQ.txt` format from
+[AutoEQ](https://github.com/jaakkopasanen/AutoEq) by Jaakko Pasanen (MIT).
+Tapmix does not bundle AutoEQ measurement data. See
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
 ## License
 
 MIT. See [LICENSE](LICENSE). SoundSource is a trademark of Rogue Amoeba
