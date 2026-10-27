@@ -1,20 +1,25 @@
 import CoreAudio
 import Foundation
+import Synchronization
 
 /// Records the post-processing stereo output of one tap as 16-bit PCM WAV.
 /// `write` only appends to a preallocated ring buffer; file I/O happens on a
-/// utility queue.
+/// utility queue. Indices cross the realtime boundary as atomics: the writer
+/// releases frames with the write index, the drainer acknowledges with the read
+/// index.
 final class TapRecorder {
     private let fileHandle: FileHandle
     private let sampleRate: Double
     private let capacityFrames: Int
     private let buffer: UnsafeMutablePointer<Float>
     private let queue = DispatchQueue(label: "com.mardinli.tapmix.recorder", qos: .utility)
+    private let writeIndex = Atomic<Int>(0)
+    private let readIndex = Atomic<Int>(0)
+    private let active = Atomic<Bool>(true)
     private var timer: DispatchSourceTimer?
-    private var writeIndex = 0
-    private var readIndex = 0
     private var framesWritten: UInt32 = 0
-    private(set) var isActive = true
+
+    var isActive: Bool { active.load(ordering: .acquiring) }
 
     init(url: URL, sampleRate: Double) throws {
         self.sampleRate = max(sampleRate, 8_000)
@@ -54,13 +59,14 @@ final class TapRecorder {
     @inline(__always)
     func write(left: Float, right: Float) {
         guard isActive else { return }
-        let next = (writeIndex + 1) % capacityFrames
-        guard next != readIndex else { return }
 
-        let base = writeIndex * 2
-        buffer[base] = left
-        buffer[base + 1] = right
-        writeIndex = next
+        let write = writeIndex.load(ordering: .relaxed)
+        let next = (write + 1) % capacityFrames
+        guard next != readIndex.load(ordering: .acquiring) else { return }
+
+        buffer[write * 2] = left
+        buffer[write * 2 + 1] = right
+        writeIndex.store(next, ordering: .releasing)
     }
 
     /// Realtime-safe append of one rendered buffer, planar or interleaved.
@@ -94,15 +100,24 @@ final class TapRecorder {
         }
 
         guard let leftBase, frames > 0 else { return }
+
+        var write = writeIndex.load(ordering: .relaxed)
+        let read = readIndex.load(ordering: .acquiring)
         for frame in 0 ..< frames {
+            let next = (write + 1) % capacityFrames
+            guard next != read else { break }
+
             let left = leftBase[frame * leftStride]
-            write(left: left, right: rightBase?[frame * rightStride] ?? left)
+            let right = rightBase?[frame * rightStride] ?? left
+            buffer[write * 2] = left
+            buffer[write * 2 + 1] = right
+            write = next
         }
+        writeIndex.store(write, ordering: .releasing)
     }
 
     func stop() {
-        guard isActive else { return }
-        isActive = false
+        guard active.exchange(false, ordering: .acquiringAndReleasing) else { return }
         timer?.cancel()
         timer = nil
         queue.sync { drain() }
@@ -113,20 +128,23 @@ final class TapRecorder {
     }
 
     private func drain() {
+        var read = readIndex.load(ordering: .relaxed)
+        let write = writeIndex.load(ordering: .acquiring)
+        guard read != write else { return }
+
         var data = Data()
         data.reserveCapacity(4_096)
 
-        while readIndex != writeIndex {
-            let base = readIndex * 2
+        while read != write {
+            let base = read * 2
             append(buffer[base], to: &data)
             append(buffer[base + 1], to: &data)
-            readIndex = (readIndex + 1) % capacityFrames
+            read = (read + 1) % capacityFrames
         }
+        readIndex.store(read, ordering: .releasing)
 
-        if !data.isEmpty {
-            fileHandle.write(data)
-            framesWritten += UInt32(data.count / 4)
-        }
+        fileHandle.write(data)
+        framesWritten += UInt32(data.count / 4)
     }
 
     @inline(__always)
