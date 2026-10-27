@@ -53,6 +53,7 @@ final class AudioCatalogTests: XCTestCase {
         pid: pid_t = 10,
         bundleID: String = "com.brave.Browser.helper",
         playing: Bool = true,
+        capturing: Bool = false,
         executablePath: String? = nil
     ) -> AudioProcess {
         AudioProcess(
@@ -60,6 +61,7 @@ final class AudioCatalogTests: XCTestCase {
             pid: pid,
             bundleID: bundleID,
             isPlaying: playing,
+            isCapturing: capturing,
             executablePath: executablePath
         )
     }
@@ -104,6 +106,16 @@ final class AudioCatalogTests: XCTestCase {
         XCTAssertEqual(result.count, 1)
         XCTAssertEqual(result.first?.bundleID, "com.brave.Browser")
         XCTAssertEqual(result.first?.playingProcessObjectIDs, [1])
+    }
+
+    func testCapturingProcessMarksTheRowInACall() {
+        let result = groups(
+            processes: [process(1, capturing: true), process(2)],
+            running: [braveHost, braveHelper]
+        )
+
+        XCTAssertEqual(result.first?.capturingProcessObjectIDs, [1])
+        XCTAssertEqual(result.first?.row.isInCall, true)
     }
 
     func testOrphanHelperIsHidden() {

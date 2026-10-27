@@ -8,6 +8,7 @@ final class TapPlanTests: XCTestCase {
         _ bundleID: String,
         processes: [AudioObjectID],
         playing: [AudioObjectID],
+        capturing: [AudioObjectID] = [],
         route: String? = nil
     ) -> AppGroup {
         var level = AppLevel()
@@ -19,6 +20,7 @@ final class TapPlanTests: XCTestCase {
             isPlaying: !playing.isEmpty,
             processObjectIDs: processes,
             playingProcessObjectIDs: playing,
+            capturingProcessObjectIDs: capturing,
             level: level,
             pinned: false
         )
@@ -110,5 +112,17 @@ final class TapPlanTests: XCTestCase {
 
         XCTAssertTrue(plan.isComplete)
         XCTAssertTrue(plan.taps.isEmpty)
+    }
+
+    func testProcessInACallPlaysUntouched() {
+        let plan = TapPlan.make(
+            groups: [group("net.whatsapp.WhatsApp", processes: [1, 2], playing: [1, 2], capturing: [1])],
+            availableUIDs: ["dev-1"],
+            outputUID: "dev-1",
+            activeProcessIDs: [1],
+            processListReadable: true
+        )
+
+        XCTAssertEqual(plan.taps.map(\.processObjectID), [2])
     }
 }

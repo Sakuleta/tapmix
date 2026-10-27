@@ -7,6 +7,9 @@ public struct AudioProcess: Hashable {
     public let pid: pid_t
     public let bundleID: String
     public let isPlaying: Bool
+    /// Capturing input as well; call apps then run voice processing, which
+    /// expects to own its output path.
+    public let isCapturing: Bool
     /// Filled from `proc_pidpath`; audio helpers are often not registered apps,
     /// so this is the only way to find their host bundle.
     public let executablePath: String?
@@ -16,12 +19,14 @@ public struct AudioProcess: Hashable {
         pid: pid_t,
         bundleID: String,
         isPlaying: Bool,
+        isCapturing: Bool = false,
         executablePath: String? = nil
     ) {
         self.objectID = objectID
         self.pid = pid
         self.bundleID = bundleID
         self.isPlaying = isPlaying
+        self.isCapturing = isCapturing
         self.executablePath = executablePath
     }
 }
@@ -71,6 +76,7 @@ enum AudioSystem {
                 pid: processID,
                 bundleID: bundleID,
                 isPlaying: running != 0,
+                isCapturing: (readUInt32(objectID, kAudioProcessPropertyIsRunningInput) ?? 0) != 0,
                 executablePath: executablePath(processID)
             )
         }

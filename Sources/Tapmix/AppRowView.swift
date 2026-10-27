@@ -36,6 +36,14 @@ struct AppRowView: View {
                             .accessibilityLabel("Pinned")
                     }
 
+                    if app.isInCall {
+                        Image(systemName: "phone.fill")
+                            .font(.system(size: 8))
+                            .foregroundStyle(.green)
+                            .help("In a call — audio plays untouched until the call ends")
+                            .accessibilityLabel("In a call, volume control paused")
+                    }
+
                     if engine.isRecording(app.bundleID) {
                         Image(systemName: "record.circle.fill")
                             .font(.system(size: 8))
