@@ -16,6 +16,7 @@ taps. No kernel extension, no virtual audio driver, no third-party dependencies.
 - `AudioCatalog` — pure snapshot → rows + per-bundle processes.
 - `AppResolver` — pure helper-process → host-app resolution.
 - `RunningAppDescriptor` — the only place that reads `NSRunningApplication`.
+- `TapPlan` — pure rule for which processes get taps and where they play.
 - `TapManager` — tap lifecycle, per-tap health, backoff, crossfaded routes.
 - `TapController` — one tap + one private aggregate + one IO proc.
 - `TapRender` — frame-major gain, EQ, night mode, balance/mono and limiter.

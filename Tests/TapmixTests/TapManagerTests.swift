@@ -24,6 +24,7 @@ final class FakeTap: TapControlling {
     private(set) var audioUnit: AudioUnitSelection?
     private(set) var recordingURLs: [URL] = []
     private(set) var recordingStops = 0
+    var isRecording = false
 
     init(processObjectID: AudioObjectID, bundleID: String, createdAt: Date) {
         self.processObjectID = processObjectID
@@ -44,8 +45,12 @@ final class FakeTap: TapControlling {
     func setAudioUnit(_ selection: AudioUnitSelection?) { audioUnit = selection }
     func startRecording(to url: URL) throws {
         recordingURLs.append(url)
+        isRecording = true
     }
-    func stopRecording() { recordingStops += 1 }
+    func stopRecording() {
+        recordingStops += 1
+        isRecording = false
+    }
     func takePeakLevel() -> Float {
         defer { peak = 0 }
         return peak
@@ -309,9 +314,27 @@ final class TapManagerTests: XCTestCase {
 
         XCTAssertEqual(urls, [url])
         XCTAssertEqual(created[0].recordingURLs, [url])
+        XCTAssertEqual(manager.recordingBundleIDs, ["com.a"])
 
         manager.stopRecording(bundleID: "com.a")
         XCTAssertEqual(created[0].recordingStops, 1)
+        XCTAssertTrue(manager.recordingBundleIDs.isEmpty)
+    }
+
+    func testRecordingStateDiesWithTheTap() {
+        let a = desired(1, "com.a")
+        sync([a])
+        _ = manager.startRecording(
+            bundleID: "com.a",
+            baseURL: FileManager.default.temporaryDirectory
+                .appendingPathComponent("tapmix-test-\(UUID().uuidString).wav")
+        )
+        XCTAssertEqual(manager.recordingBundleIDs, ["com.a"])
+
+        sync([])
+
+        XCTAssertTrue(manager.activeProcessIDs.isEmpty)
+        XCTAssertTrue(manager.recordingBundleIDs.isEmpty)
     }
 
     func testAudioUnitSelectionReachesTaps() {

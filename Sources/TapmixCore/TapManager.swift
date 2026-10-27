@@ -69,6 +69,10 @@ final class TapManager {
 
     var activeProcessIDs: Set<AudioObjectID> { Set(taps.keys) }
     var activeBundleIDs: Set<String> { Set(taps.values.map(\.bundleID)) }
+    /// Derived from the taps, so a tap that stops also stops claiming to record.
+    var recordingBundleIDs: Set<String> {
+        Set(taps.values.filter(\.isRecording).map(\.bundleID))
+    }
 
     func setEQ(_ settings: EQSettings, for bundleID: String) {
         eqs[bundleID] = settings

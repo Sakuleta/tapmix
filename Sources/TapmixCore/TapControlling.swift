@@ -6,6 +6,8 @@ protocol TapControlling: AnyObject {
     var bundleID: String { get }
     var createdAt: Date { get }
     var callbackCount: UInt64 { get }
+    /// True while this tap is writing a WAV.
+    var isRecording: Bool { get }
     func start() throws
     func stop()
     func setGain(_ gain: Float)

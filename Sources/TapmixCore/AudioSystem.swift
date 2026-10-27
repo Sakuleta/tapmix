@@ -55,8 +55,11 @@ enum AudioSystem {
 
     // MARK: - Process objects
 
-    static func processes() -> [AudioProcess] {
-        objectList(kAudioHardwarePropertyProcessObjectList).compactMap { objectID in
+    /// `nil` means the HAL could not answer; an empty array means no process is
+    /// using audio right now. The engine treats those differently.
+    static func processes() -> [AudioProcess]? {
+        guard let objects = objectListOrNil(kAudioHardwarePropertyProcessObjectList) else { return nil }
+        return objects.compactMap { objectID in
             guard let pid: UInt32 = readUInt32(objectID, kAudioProcessPropertyPID),
                   let bundleID = readString(objectID, kAudioProcessPropertyBundleID),
                   let running: UInt32 = readUInt32(objectID, kAudioProcessPropertyIsRunningOutput)
@@ -257,10 +260,14 @@ enum AudioSystem {
     }
 
     static func objectList(_ selector: AudioObjectPropertySelector) -> [AudioObjectID] {
+        objectListOrNil(selector) ?? []
+    }
+
+    static func objectListOrNil(_ selector: AudioObjectPropertySelector) -> [AudioObjectID]? {
         var address = propertyAddress(selector)
         var size: UInt32 = 0
         guard AudioObjectGetPropertyDataSize(systemObject, &address, 0, nil, &size) == noErr else {
-            return []
+            return nil
         }
 
         let count = Int(size) / MemoryLayout<AudioObjectID>.size
@@ -268,7 +275,7 @@ enum AudioSystem {
 
         var ids = [AudioObjectID](repeating: 0, count: count)
         guard AudioObjectGetPropertyData(systemObject, &address, 0, nil, &size, &ids) == noErr else {
-            return []
+            return nil
         }
         return ids
     }
