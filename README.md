@@ -207,6 +207,11 @@ microphone audio. Turn the feature off from the speaker-with-one-wave menu in
 the panel footer. Screen recordings and voice memos also count as microphone
 use.
 
+### Manual test checklist
+
+Hardware-dependent checks (routing, Bluetooth, calls, sleep/wake, long runs) are
+listed in [docs/manual-test.md](docs/manual-test.md).
+
 ### Troubleshooting
 
 - **No apps listed:** start playback in the app and check the menu bar icon;
@@ -315,6 +320,13 @@ NOTARY_PROFILE=tapmix ./scripts/release.sh
 1. A searchable AutoEQ catalog and editable parametric filters
 2. Configurable hotkeys and media-key handling
 3. Notarized, Developer ID-signed release
+
+## Credits
+
+AutoEQ import supports the `ParametricEQ.txt` format from
+[AutoEQ](https://github.com/jaakkopasanen/AutoEq) by Jaakko Pasanen (MIT).
+Tapmix does not bundle AutoEQ measurement data. See
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ## License
 
