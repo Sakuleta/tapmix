@@ -1,6 +1,7 @@
 import AudioToolbox
 import CoreAudio
 import Foundation
+import Synchronization
 import os
 
 enum TapError: LocalizedError {
@@ -34,7 +35,8 @@ final class TapController: TapControlling {
     private var peakLevel: Float = 0
     private(set) var running = false
 
-    var isRecording: Bool { recorder?.isActive ?? false }
+    /// Read from the UI while the recorder itself is installed on the tap queue.
+    var isRecording: Bool { recording.load(ordering: .acquiring) }
 
     private let outputDeviceUID: String
     private let log = Logger(subsystem: "com.mardinli.tapmix", category: "tap")
@@ -53,6 +55,7 @@ final class TapController: TapControlling {
     private var mono = false
     private var sampleRate: Double = 48_000
     private var recorder: TapRecorder?
+    private let recording = Atomic<Bool>(false)
     private var pendingAudioUnit: AudioUnitSelection?
     private var audioUnitHost: AudioUnitHost?
 
@@ -125,6 +128,7 @@ final class TapController: TapControlling {
             self.recorder?.stop()
             self.recorder = recorder
         }
+        recording.store(true, ordering: .releasing)
     }
 
     func stopRecording() {
@@ -132,6 +136,7 @@ final class TapController: TapControlling {
             recorder?.stop()
             recorder = nil
         }
+        recording.store(false, ordering: .releasing)
     }
 
     func takePeakLevel() -> Float {
@@ -258,6 +263,7 @@ final class TapController: TapControlling {
             recorder = nil
             audioUnitHost = nil
         }
+        recording.store(false, ordering: .releasing)
 
         if aggregateID != 0 {
             AudioHardwareDestroyAggregateDevice(aggregateID)
