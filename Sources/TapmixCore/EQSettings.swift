@@ -1,6 +1,6 @@
 import Foundation
 
-public struct EQSettings: Codable, Equatable {
+public struct EQSettings: Codable, Equatable, Sendable {
     public static let bandCount = 10
     public static let frequencies: [Float] = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000]
     public static let gainRange: ClosedRange<Float> = -12 ... 12
