@@ -43,5 +43,13 @@
 	<true/>
 	<key>NSHumanReadableCopyright</key>
 	<string>MIT licensed</string>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUFeedURL</key>
+	<string>https://sakuleta.github.io/tapmix/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>o+0uRhGfA2XqoFzeKhvp70HRDTu4ZZAPnHkQ2cFUfKo=</string>
+	<key>SUScheduledCheckInterval</key>
+	<integer>86400</integer>
 </dict>
 </plist>

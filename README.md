@@ -33,7 +33,7 @@ no kernel extension, no virtual audio driver, and no proprietary code.
 - **Custom EQ presets** — save bands plus AutoEQ filters and reuse them on any app
 - **EQ response curve** — see the combined band/AutoEQ response while editing
 - **Local AutoEQ catalog** — point Tapmix at an AutoEQ results folder and search it
-- **On-demand update check** — ask the gear menu to compare against the latest GitHub release
+- **Sparkle auto-update** — signed appcast, a daily check, and **Check for Updates…** in the gear menu
 - **WAV recording** — record the processed audio of an app from its context menu
 - **Audio Unit effects** — host any installed AUv2 effect on one app's output
 - **Launch at login** — start Tapmix with the Mac from the gear menu
@@ -356,11 +356,25 @@ xcrun notarytool store-credentials "tapmix" \
 NOTARY_PROFILE=tapmix ./scripts/release.sh
 ```
 
+Updates use [Sparkle](https://sparkle-project.org) with an EdDSA-signed
+appcast served by GitHub Pages from `docs/appcast.xml`. The public key lives in
+`Resources/Info.plist`; the private key stays in the login keychain and is
+created once with:
+
+```bash
+.build/artifacts/sparkle/Sparkle/bin/generate_keys
+```
+
+`scripts/release.sh` regenerates the appcast for a notarized zip. Commit and
+push the updated `docs/appcast.xml` after publishing the GitHub release so
+installed copies see it. The appcast must be signed: Sparkle refuses unsigned
+updates when `SUPublicEDKey` is set.
+
 ## Roadmap
 
-1. A searchable AutoEQ catalog and editable parametric filters
-2. Configurable hotkeys and media-key handling
-3. Notarized, Developer ID-signed release
+- Notarized releases for every change set
+- Manual hardware test pass on multi-device, Bluetooth and call setups
+  (`docs/manual-test.md`)
 
 ## Credits
 

@@ -38,3 +38,7 @@ fi
 
 echo "Built $ZIP"
 shasum -a 256 "$ZIP"
+
+if [[ "$IDENTITY" == "Developer ID Application"* ]]; then
+    ./scripts/appcast.sh "$VERSION"
+fi
