@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.3.0 — 2026-10-27
+
+- Tap planning is a pure `TapPlan` module; a failed HAL process read keeps the
+  running mix instead of stopping every tap
+- The recording dot follows the recorder that owns it, so it clears when a tap
+  stops
+- EQ banks and the recording ring publish through atomics; a tap stops before
+  its Audio Unit and recorder are released
+- The panel keeps its contrast over bright windows and is split by surface
+- Mixer sliders are drawn instead of the system track, so they read in light mode
+- Idle CPU with the panel closed drops from 3.3% to 1.8%
+- 145 tests, including engine actions; a recording ends cleanly at 4 GB or when
+  the disk fills
+- Hotkey volume steps respect call ducking
+
 ## 0.2.4 — 2026-10-27
 
 - The menu bar panel is translucent glass: the system material shows through,
