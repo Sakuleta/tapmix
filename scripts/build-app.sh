@@ -6,11 +6,14 @@ cd "$(dirname "$0")/.."
 CONFIG="${1:-release}"
 APP="build/Tapmix.app"
 DEFAULT_IDENTITY="Tapmix Dev"
+APPLE_DEVELOPMENT="$(security find-identity -v -p codesigning 2>/dev/null | sed -n 's/.*"\(Apple Development: [^"]*\)"/\1/p' | head -n 1)"
 
 if [[ -n "${CODESIGN_IDENTITY:-}" ]]; then
     IDENTITY="$CODESIGN_IDENTITY"
 elif security find-identity -v -p codesigning 2>/dev/null | grep -Fq "$DEFAULT_IDENTITY"; then
     IDENTITY="$DEFAULT_IDENTITY"
+elif [[ -n "$APPLE_DEVELOPMENT" ]]; then
+    IDENTITY="$APPLE_DEVELOPMENT"
 else
     IDENTITY="-"
     echo "warning: using ad-hoc signing; macOS may ask for audio permission after each rebuild."

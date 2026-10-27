@@ -65,7 +65,10 @@ so the permission is attributed to Tapmix, not to Terminal.
 ### Stable local signing (recommended)
 
 Ad-hoc signing gets a new code hash on every rebuild, so macOS asks for audio
-permission again. Create a self-signed **Code Signing** certificate once:
+permission again. If the Mac already has an **Apple Development** identity
+(Xcode → Settings → Accounts), `build-app.sh` picks it automatically and the TCC
+grant survives rebuilds. Otherwise create a self-signed **Code Signing**
+certificate once:
 
 1. Keychain Access → Certificate Assistant → Create a Certificate.
 2. Name: `Tapmix Dev`; Identity Type: Self Signed Root; Certificate Type:
@@ -75,7 +78,8 @@ permission again. Create a self-signed **Code Signing** certificate once:
 4. Confirm it is usable:
    `security find-identity -v -p codesigning | grep "Tapmix Dev"`.
 5. `./scripts/build-app.sh` picks it up automatically. Override with
-   `CODESIGN_IDENTITY="..."` if you use a different identity.
+   `CODESIGN_IDENTITY="..."` if you use a different identity; an Apple
+   Development identity is used when no `Tapmix Dev` certificate exists.
 
 If `codesign` reports a trust or identity error, fall back to ad-hoc for that
 build; do not disable SIP or modify system security settings.
