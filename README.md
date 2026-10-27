@@ -22,6 +22,8 @@ no kernel extension, no virtual audio driver, and no proprietary code.
   from any space without opening the panel
 - **Automatic call ducking** — while the microphone is in use, other apps drop
   to 30% and return when the call ends
+- **Preferred output** — pin a device and Tapmix switches back to it when it
+  reconnects
 - **Pinned apps** stay visible while idle; **hide** an app to remove it from
   Tapmix entirely; **search** filters the list
 - **Output volume and mute** for the current default output device
@@ -111,6 +113,13 @@ build; do not disable SIP or modify system security settings.
 
 Hotkeys are fixed for now; they need no Accessibility permission.
 
+### Preferred output
+
+Click the arrow icon next to the output name and pick a device. When that
+device connects, Tapmix makes it the system default. A manual switch while it
+is connected is respected; Tapmix only acts when the device appears again.
+Choose **Follow macOS** to turn the preference off.
+
 ### Calls
 
 When any app starts using the microphone, Tapmix waits a second, then lowers
@@ -198,12 +207,14 @@ Tests/TapmixTests/
   and meters at 10 Hz; HAL listeners are a later optimization.
 - **Call detection is microphone-based.** Any recording app can trigger
   ducking, and a browser-based call exempts the whole browser.
+- **Device priority reacts to connections only.** It does not fight a manual
+  output switch while the preferred device stays connected.
 - **Signing.** Ad-hoc signing is the fallback; TCC grants do not survive
   rebuilds without the stable identity described above.
 
 ## Roadmap
 
-1. Device priority and automatic restore when hardware reconnects
+1. Crossfade when a route or output device changes
 2. Loudness matching and AutoEQ headphone correction
 3. HAL listeners instead of polling; hotplug and sample-rate handling
 4. Configurable hotkeys and media-key handling

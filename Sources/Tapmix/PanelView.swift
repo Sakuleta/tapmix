@@ -82,6 +82,39 @@ struct PanelView: View {
                 Text("\(Int((engine.outputVolume * 100).rounded()))%")
                     .font(.system(size: 11, design: .monospaced))
                     .foregroundStyle(.secondary)
+
+                Menu {
+                    Button {
+                        engine.setPreferredOutput(nil)
+                    } label: {
+                        if engine.preferredOutputUID == nil {
+                            Label("Follow macOS", systemImage: "checkmark")
+                        } else {
+                            Text("Follow macOS")
+                        }
+                    }
+                    Divider()
+                    ForEach(engine.outputDevices) { device in
+                        Button {
+                            engine.setPreferredOutput(device.uid)
+                        } label: {
+                            if engine.preferredOutputUID == device.uid {
+                                Label(device.name, systemImage: "checkmark")
+                            } else {
+                                Text(device.name)
+                            }
+                        }
+                    }
+                } label: {
+                    Image(systemName: engine.preferredOutputUID == nil ? "arrow.left.arrow.right" : "pin.fill")
+                        .font(.system(size: 10))
+                        .foregroundStyle(engine.preferredOutputUID == nil ? .secondary : Color.accentColor)
+                }
+                .menuStyle(.borderlessButton)
+                .menuIndicator(.hidden)
+                .fixedSize()
+                .help("Preferred output device")
+                .accessibilityLabel("Preferred output device")
             }
 
             HStack(spacing: 10) {

@@ -88,6 +88,13 @@ enum AudioSystem {
         return running != 0
     }
 
+    static func setDefaultOutputDevice(_ device: AudioObjectID) {
+        var address = propertyAddress(kAudioHardwarePropertyDefaultOutputDevice)
+        var value = device
+        let size = UInt32(MemoryLayout<AudioDeviceID>.size)
+        AudioObjectSetPropertyData(systemObject, &address, 0, nil, size, &value)
+    }
+
     static func deviceUID(_ device: AudioObjectID) -> String? {
         readString(device, kAudioDevicePropertyDeviceUID)
     }
