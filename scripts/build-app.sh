@@ -30,6 +30,22 @@ cp "$BIN" "$APP/Contents/MacOS/Tapmix"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 
+# A local build must not share a TCC identity with the notarized app: swapping
+# two signatures under one bundle ID makes macOS re-ask for audio permission on
+# every launch. Development builds get their own bundle ID and no updater.
+if [[ "$IDENTITY" == "Developer ID Application"* ]]; then
+    BUNDLE_ID="com.mardinli.tapmix"
+    DISPLAY_NAME="Tapmix"
+else
+    BUNDLE_ID="com.mardinli.tapmix.dev"
+    DISPLAY_NAME="Tapmix Dev"
+fi
+/usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $BUNDLE_ID" "$APP/Contents/Info.plist"
+/usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName $DISPLAY_NAME" "$APP/Contents/Info.plist"
+if [[ "$IDENTITY" != "Developer ID Application"* ]]; then
+    /usr/libexec/PlistBuddy -c "Set :SUEnableAutomaticChecks false" "$APP/Contents/Info.plist"
+fi
+
 SPARKLE_FRAMEWORK="$(find .build/artifacts -path '*Sparkle.xcframework/*/Sparkle.framework' -type d 2>/dev/null | head -n 1)"
 if [[ -z "$SPARKLE_FRAMEWORK" ]]; then
     echo "error: Sparkle.framework is missing; run swift package resolve." >&2
@@ -50,7 +66,7 @@ for item in "$SPARKLE_DIR/Autoupdate" "$SPARKLE_DIR/Autoupdate.app" "$SPARKLE_DI
     [[ -e "$item" ]] && codesign "${SIGN[@]}" "$item"
 done
 codesign "${SIGN[@]}" "$APP/Contents/Frameworks/Sparkle.framework"
-codesign "${SIGN[@]}" --identifier com.mardinli.tapmix "$APP"
+codesign "${SIGN[@]}" --identifier "$BUNDLE_ID" "$APP"
 
 echo "Built $APP (signed with: $IDENTITY)"
 echo "Run with: open $APP"
