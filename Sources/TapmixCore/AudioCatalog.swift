@@ -26,7 +26,8 @@ struct AppGroup {
             routeUID: level.outputUID,
             nightMode: level.nightMode,
             balance: level.balance,
-            mono: level.mono
+            mono: level.mono,
+            audioUnit: level.audioUnit
         )
     }
 }

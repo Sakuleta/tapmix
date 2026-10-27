@@ -21,6 +21,7 @@ final class FakeTap: TapControlling {
     private(set) var nightMode = false
     private(set) var balance: Float = 0
     private(set) var mono = false
+    private(set) var audioUnit: AudioUnitSelection?
     private(set) var recordingURLs: [URL] = []
     private(set) var recordingStops = 0
 
@@ -40,6 +41,7 @@ final class FakeTap: TapControlling {
     func setNightMode(_ enabled: Bool) { nightMode = enabled }
     func setBalance(_ value: Float) { balance = value }
     func setMono(_ enabled: Bool) { mono = enabled }
+    func setAudioUnit(_ selection: AudioUnitSelection?) { audioUnit = selection }
     func startRecording(to url: URL) throws {
         recordingURLs.append(url)
     }
@@ -310,6 +312,35 @@ final class TapManagerTests: XCTestCase {
 
         manager.stopRecording(bundleID: "com.a")
         XCTAssertEqual(created[0].recordingStops, 1)
+    }
+
+    func testAudioUnitSelectionReachesTaps() {
+        let selection = AudioUnitSelection(
+            componentSubType: 1,
+            componentManufacturer: 2
+        )
+        manager.setAudioUnit(selection, for: "com.a")
+        sync([desired(1, "com.a")])
+        XCTAssertEqual(created[0].audioUnit, selection)
+
+        manager.setAudioUnit(nil, for: "com.a")
+        XCTAssertNil(created[0].audioUnit)
+    }
+
+    func testAudioUnitIsRestoredOnRetry() {
+        let selection = AudioUnitSelection(
+            componentSubType: 3,
+            componentManufacturer: 4
+        )
+        manager.setAudioUnit(selection, for: "com.a")
+        failing.insert(1)
+        sync([desired(1, "com.a")])
+        XCTAssertNil(created[0].audioUnit)
+
+        failing.removeAll()
+        now = now.addingTimeInterval(TapManager.retryDelays[0] + 1)
+        sync([desired(1, "com.a")])
+        XCTAssertEqual(created.last?.audioUnit, selection)
     }
 
     func testBalanceAndMonoPropagate() {

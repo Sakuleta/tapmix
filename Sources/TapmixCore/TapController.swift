@@ -51,6 +51,8 @@ final class TapController: TapControlling {
     private var mono = false
     private var sampleRate: Double = 48_000
     private var recorder: TapRecorder?
+    private var pendingAudioUnit: AudioUnitSelection?
+    private var audioUnitHost: AudioUnitHost?
 
     // Realtime gain state. Aligned Float reads/writes are atomic on Apple silicon.
     private var targetGain: Float = 1
@@ -86,6 +88,31 @@ final class TapController: TapControlling {
 
     func setMono(_ enabled: Bool) {
         mono = enabled
+    }
+
+    func setAudioUnit(_ selection: AudioUnitSelection?) {
+        guard selection != pendingAudioUnit else { return }
+        pendingAudioUnit = selection
+        swapAudioUnit()
+    }
+
+    private func swapAudioUnit() {
+        let host = pendingAudioUnit.flatMap { selection -> AudioUnitHost? in
+            do {
+                let host = try AudioUnitHost(selection: selection, sampleRate: sampleRate)
+                log.info("Audio Unit ready subtype=\(selection.componentSubType) rate=\(Int(self.sampleRate))")
+                return host
+            } catch {
+                log.error("Audio Unit unavailable: \(error.localizedDescription, privacy: .public)")
+                return nil
+            }
+        }
+
+        // The IO proc runs on `queue`, so swapping there lands between render
+        // callbacks and releases the old host with no thread using it.
+        queue.sync {
+            audioUnitHost = host
+        }
     }
 
     func startRecording(to url: URL) throws {
@@ -168,6 +195,7 @@ final class TapController: TapControlling {
         let night = NightModeProcessor(sampleRate: sampleRate)
         night.setEnabled(pendingNightMode)
         nightModeProcessor = night
+        swapAudioUnit()
         var newProcID: AudioDeviceIOProcID?
         status = AudioDeviceCreateIOProcIDWithBlock(&newProcID, newAggregateID, queue) { [weak self] _, input, _, output, _ in
             guard let self else {
@@ -207,6 +235,7 @@ final class TapController: TapControlling {
         guard running || aggregateID != 0 || tapID != 0 else { return }
         stopRecording()
         recorder = nil
+        audioUnitHost = nil
         running = false
 
         if aggregateID != 0, let ioProcID {
@@ -261,6 +290,8 @@ final class TapController: TapControlling {
             limiter: limiter
         )
         peakLevel = max(peakLevel, peak)
+        audioUnitHost?.process(bufferList: outputBufferList)
+        recorder?.write(bufferList: outputBufferList)
     }
 
     private static func zero(_ bufferList: UnsafeMutablePointer<AudioBufferList>) {

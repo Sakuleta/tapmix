@@ -169,6 +169,14 @@ public final class AudioEngine: ObservableObject {
         updateRow(bundleID, eq: settings)
     }
 
+    public func setAudioUnit(_ bundleID: String, _ selection: AudioUnitSelection?) {
+        var level = store.level(for: bundleID)
+        level.audioUnit = selection
+        store.set(level, for: bundleID)
+        tapManager.setAudioUnit(selection, for: bundleID)
+        refresh()
+    }
+
     public func setBoost(_ bundleID: String, _ boost: Float) {
         var level = store.level(for: bundleID)
         level.boost = min(max(boost, 1), 4)
@@ -258,6 +266,7 @@ public final class AudioEngine: ObservableObject {
             tapManager.setNightMode(level.nightMode, for: bundleID)
             tapManager.setBalance(level.balance, for: bundleID)
             tapManager.setMono(level.mono, for: bundleID)
+            tapManager.setAudioUnit(level.audioUnit, for: bundleID)
         }
         refresh()
     }
@@ -500,6 +509,7 @@ public final class AudioEngine: ObservableObject {
                 effectiveGain(group.level, bundleID: group.bundleID),
                 for: group.bundleID
             )
+            tapManager.setAudioUnit(group.level.audioUnit, for: group.bundleID)
         }
 
         var desired: [TapManager.DesiredTap] = []

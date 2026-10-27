@@ -13,6 +13,8 @@ public struct AppLevel: Codable, Equatable {
     /// -1 is full left, 0 is center, +1 is full right.
     public var balance: Float
     public var mono: Bool
+    /// AUv2 effect hosted after the built-in processing; `nil` is off.
+    public var audioUnit: AudioUnitSelection?
 
     public init(
         volume: Float = 1,
@@ -22,7 +24,8 @@ public struct AppLevel: Codable, Equatable {
         outputUID: String? = nil,
         nightMode: Bool = false,
         balance: Float = 0,
-        mono: Bool = false
+        mono: Bool = false,
+        audioUnit: AudioUnitSelection? = nil
     ) {
         self.volume = volume
         self.muted = muted
@@ -32,6 +35,7 @@ public struct AppLevel: Codable, Equatable {
         self.nightMode = nightMode
         self.balance = balance
         self.mono = mono
+        self.audioUnit = audioUnit
     }
 
     public var gain: Float {
@@ -39,7 +43,7 @@ public struct AppLevel: Codable, Equatable {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case volume, muted, boost, eq, outputUID, nightMode, balance, mono
+        case volume, muted, boost, eq, outputUID, nightMode, balance, mono, audioUnit
     }
 
     public init(from decoder: Decoder) throws {
@@ -52,6 +56,7 @@ public struct AppLevel: Codable, Equatable {
         nightMode = try container.decodeIfPresent(Bool.self, forKey: .nightMode) ?? false
         balance = try container.decodeIfPresent(Float.self, forKey: .balance) ?? 0
         mono = try container.decodeIfPresent(Bool.self, forKey: .mono) ?? false
+        audioUnit = try container.decodeIfPresent(AudioUnitSelection.self, forKey: .audioUnit)
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -64,6 +69,7 @@ public struct AppLevel: Codable, Equatable {
         try container.encode(nightMode, forKey: .nightMode)
         try container.encode(balance, forKey: .balance)
         try container.encode(mono, forKey: .mono)
+        try container.encodeIfPresent(audioUnit, forKey: .audioUnit)
     }
 }
 
@@ -121,6 +127,8 @@ public struct AppRow: Identifiable, Equatable {
     public var nightMode: Bool
     public var balance: Float
     public var mono: Bool
+    /// AUv2 effect hosted after the built-in processing; `nil` is off.
+    public var audioUnit: AudioUnitSelection?
 
     public init(
         bundleID: String,
@@ -136,7 +144,8 @@ public struct AppRow: Identifiable, Equatable {
         routeUID: String? = nil,
         nightMode: Bool = false,
         balance: Float = 0,
-        mono: Bool = false
+        mono: Bool = false,
+        audioUnit: AudioUnitSelection? = nil
     ) {
         self.bundleID = bundleID
         self.name = name
@@ -152,6 +161,7 @@ public struct AppRow: Identifiable, Equatable {
         self.nightMode = nightMode
         self.balance = balance
         self.mono = mono
+        self.audioUnit = audioUnit
     }
 }
 

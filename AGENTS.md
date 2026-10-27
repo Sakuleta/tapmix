@@ -20,6 +20,8 @@ taps. No kernel extension, no virtual audio driver, no third-party dependencies.
 - `TapController` — one tap + one private aggregate + one IO proc.
 - `TapRender` — frame-major gain, EQ, night mode, balance/mono and limiter.
 - `TapRecorder` — realtime ring buffer to 16-bit WAV for one tap.
+- `AudioUnitHost` — AUv2 effect rendered inside the tap callback; output clamped.
+- `AudioUnitSelection`/`AudioUnitCatalog` — persisted effect identity and the installed list.
 - `EQProcessor` — ten peaking biquads per channel, coefficients built off-thread.
 - `EQResponse` — log-spaced magnitude curve for the EQ graph.
 - `NightModeProcessor` — stereo-linked leveler before the limiter.
