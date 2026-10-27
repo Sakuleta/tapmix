@@ -281,7 +281,7 @@ struct PanelView: View {
             Spacer()
             Menu {
                 Button("Check for Updates…") {
-                    UpdateChecker.shared.check()
+                    UpdateController.shared.checkForUpdates()
                 }
                 Divider()
                 Toggle("Launch at login", isOn: Binding(

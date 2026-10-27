@@ -6,6 +6,9 @@ let package = Package(
     platforms: [
         .macOS("15.0")
     ],
+    dependencies: [
+        .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.10.1")
+    ],
     targets: [
         .target(
             name: "TapmixCore",
@@ -13,7 +16,10 @@ let package = Package(
         ),
         .executableTarget(
             name: "Tapmix",
-            dependencies: ["TapmixCore"],
+            dependencies: [
+                "TapmixCore",
+                .product(name: "Sparkle", package: "Sparkle")
+            ],
             path: "Sources/Tapmix"
         ),
         .testTarget(

@@ -30,12 +30,27 @@ cp "$BIN" "$APP/Contents/MacOS/Tapmix"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 
-if [[ "$IDENTITY" == "Developer ID Application"* ]]; then
-    codesign --force --sign "$IDENTITY" --identifier com.mardinli.tapmix \
-        --options runtime --timestamp "$APP"
-else
-    codesign --force --sign "$IDENTITY" --identifier com.mardinli.tapmix "$APP"
+SPARKLE_FRAMEWORK="$(find .build/artifacts -path '*Sparkle.xcframework/*/Sparkle.framework' -type d 2>/dev/null | head -n 1)"
+if [[ -z "$SPARKLE_FRAMEWORK" ]]; then
+    echo "error: Sparkle.framework is missing; run swift package resolve." >&2
+    exit 1
 fi
+mkdir -p "$APP/Contents/Frameworks"
+ditto "$SPARKLE_FRAMEWORK" "$APP/Contents/Frameworks/Sparkle.framework"
+install_name_tool -add_rpath "@executable_path/../Frameworks" "$APP/Contents/MacOS/Tapmix" 2>/dev/null || true
+
+SIGN=(--force --sign "$IDENTITY")
+if [[ "$IDENTITY" == "Developer ID Application"* ]]; then
+    SIGN+=(--options runtime --timestamp)
+fi
+
+# Inside-out: Sparkle's helpers, then the framework, then the app.
+SPARKLE_DIR="$APP/Contents/Frameworks/Sparkle.framework/Versions/B"
+for item in "$SPARKLE_DIR/Autoupdate.app" "$SPARKLE_DIR/Updater.app" "$SPARKLE_DIR/XPCServices/"*.xpc; do
+    [[ -e "$item" ]] && codesign "${SIGN[@]}" "$item"
+done
+codesign "${SIGN[@]}" "$APP/Contents/Frameworks/Sparkle.framework"
+codesign "${SIGN[@]}" --identifier com.mardinli.tapmix "$APP"
 
 echo "Built $APP (signed with: $IDENTITY)"
 echo "Run with: open $APP"

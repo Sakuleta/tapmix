@@ -23,6 +23,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         AudioEngine.shared.start()
         HotKeyController.shared.start()
+        UpdateController.shared.start()
 
         NSAppleEventManager.shared().setEventHandler(
             self,
