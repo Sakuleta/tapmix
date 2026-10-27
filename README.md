@@ -30,6 +30,7 @@ no kernel extension, no virtual audio driver, and no proprietary code.
   Raycast or shell scripts
 - **Per-app balance and mono downmix** — shift left/right or fold to one channel
 - **Saved mixes** — name a scene and restore levels, EQ and routing later
+- **Custom EQ presets** — save bands plus AutoEQ filters and reuse them on any app
 - **Pinned apps** stay visible while idle; **hide** an app to remove it from
   Tapmix entirely; **search** filters the list
 - **Output volume and mute** for the current default output device
@@ -135,6 +136,13 @@ open "tapmix://set-route?app=com.spotify.client&device=DEVICE-UID"
 
 `volume` is 0-200, `boost` is 1-4, and an empty `device` returns the app to
 the system default. The same strings work in Shortcuts and Raycast.
+
+### EQ presets
+
+The **Presets** menu in the sound popover lists the built-in presets, saved
+presets, and **Save preset…**. A saved preset stores the bands and any imported
+AutoEQ filters, is overwritten by name, and can be applied to any app or
+deleted from the same menu.
 
 ### AutoEQ
 

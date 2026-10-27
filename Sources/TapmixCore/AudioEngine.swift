@@ -16,6 +16,7 @@ public final class AudioEngine: ObservableObject {
     @Published public private(set) var outputDevices: [AudioDevice] = []
     @Published public private(set) var isDucking = false
     @Published public private(set) var scenes: [MixScene] = []
+    @Published public private(set) var eqPresets: [SavedEQPreset] = []
     public private(set) var preferredOutputUID: String?
 
     /// Set by the panel while the output slider is being dragged so polling does not fight it.
@@ -24,6 +25,7 @@ public final class AudioEngine: ObservableObject {
     private let store: LevelStore
     private let preferences: AppPreferences
     private let sceneStore: SceneStore
+    private let eqPresetStore: EQPresetStore
     private let tapManager = TapManager()
     private var outputUID: String?
     private var outputDeviceID: AudioObjectID = 0
@@ -42,12 +44,15 @@ public final class AudioEngine: ObservableObject {
     init(
         store: LevelStore = LevelStore(),
         preferences: AppPreferences = AppPreferences(),
-        sceneStore: SceneStore = SceneStore()
+        sceneStore: SceneStore = SceneStore(),
+        eqPresetStore: EQPresetStore = EQPresetStore()
     ) {
         self.store = store
         self.preferences = preferences
         self.sceneStore = sceneStore
+        self.eqPresetStore = eqPresetStore
         scenes = sceneStore.scenes
+        eqPresets = eqPresetStore.presets
         duckingEnabled = UserDefaults.standard.object(forKey: Self.duckingKey) as? Bool ?? true
         preferredOutputUID = UserDefaults.standard.string(forKey: Self.preferredOutputKey)
     }
@@ -210,6 +215,16 @@ public final class AudioEngine: ObservableObject {
 
     public func toggleOutputMute() {
         setOutputMuted(!outputMuted)
+    }
+
+    public func saveEQPreset(_ name: String, for bundleID: String) {
+        eqPresetStore.save(name: name, settings: store.level(for: bundleID).eq)
+        eqPresets = eqPresetStore.presets
+    }
+
+    public func deleteEQPreset(_ id: UUID) {
+        eqPresetStore.delete(id)
+        eqPresets = eqPresetStore.presets
     }
 
     public func saveScene(named name: String) {
