@@ -6,7 +6,7 @@ no kernel extension, no virtual audio driver, and no proprietary code.
 
 [github.com/Sakuleta/tapmix](https://github.com/Sakuleta/tapmix) · MIT licensed
 
-![status](https://img.shields.io/badge/status-v0.1-orange) ![license](https://img.shields.io/badge/license-MIT-blue)
+![CI](https://github.com/Sakuleta/tapmix/actions/workflows/ci.yml/badge.svg) ![status](https://img.shields.io/badge/status-v0.2-orange) ![license](https://img.shields.io/badge/license-MIT-blue)
 
 ## Features (v0.1)
 
