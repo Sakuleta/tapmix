@@ -87,11 +87,42 @@ enum AudioSystem {
         return device
     }
 
-    static func inputIsActive() -> Bool {
-        let device: AudioObjectID? = read(systemObject, kAudioHardwarePropertyDefaultInputDevice)
-        guard let device, device != kAudioObjectUnknown else { return false }
-        let running: UInt32 = read(device, kAudioDevicePropertyDeviceIsRunningSomewhere) ?? 0
-        return running != 0
+    /// Bundle IDs of the processes capturing input right now. Device-wide flags
+    /// also flip for virtual drivers, recorders and duplex playback, so the
+    /// caller still has to look for a call app before ducking anything.
+    static func inputBundleIDs() -> Set<String> {
+        var listAddress = propertyAddress(kAudioHardwarePropertyProcessObjectList)
+        var size: UInt32 = 0
+        guard AudioObjectGetPropertyDataSize(systemObject, &listAddress, 0, nil, &size) == noErr,
+              size > 0
+        else { return [] }
+
+        let count = Int(size) / MemoryLayout<AudioObjectID>.size
+        var objects = [AudioObjectID](repeating: 0, count: count)
+        guard AudioObjectGetPropertyData(systemObject, &listAddress, 0, nil, &size, &objects) == noErr
+        else { return [] }
+
+        var bundleIDs: Set<String> = []
+        for object in objects {
+            var runningAddress = propertyAddress(kAudioProcessPropertyIsRunningInput)
+            var running: UInt32 = 0
+            var runningSize = UInt32(MemoryLayout<UInt32>.size)
+            guard AudioObjectGetPropertyData(object, &runningAddress, 0, nil, &runningSize, &running) == noErr,
+                  running != 0
+            else { continue }
+
+            var bundleAddress = propertyAddress(kAudioProcessPropertyBundleID)
+            var bundle: CFString = "" as CFString
+            var bundleSize = UInt32(MemoryLayout<CFString>.size)
+            guard AudioObjectGetPropertyData(object, &bundleAddress, 0, nil, &bundleSize, &bundle) == noErr
+            else { continue }
+
+            let identifier = bundle as String
+            if !identifier.isEmpty {
+                bundleIDs.insert(identifier)
+            }
+        }
+        return bundleIDs
     }
 
     static func setDefaultOutputDevice(_ device: AudioObjectID) {

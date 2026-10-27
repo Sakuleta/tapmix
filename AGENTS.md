@@ -30,7 +30,7 @@ taps. No kernel extension, no virtual audio driver, no third-party dependencies.
 - `EQFilterParser` — reads AutoEQ/Equalizer APO `ParametricEQ.txt` files.
 - `AutoEQCatalog` — indexes a local AutoEQ results folder for search.
 - `AudioEngine` — 1s poll, UI state, user actions, hotkey target.
-- `DuckingPolicy` — microphone-activity hysteresis; never reads audio.
+- `DuckingPolicy` — call-app input hysteresis; never reads audio.
 - `DevicePriority` — switches to the preferred output when it reconnects.
 - `HotKeyCenter`/`HotKeyController` — global Carbon hotkeys and their modifier setting.
 - `HUDController` — the non-activating volume HUD.
