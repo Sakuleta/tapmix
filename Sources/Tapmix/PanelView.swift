@@ -1,6 +1,7 @@
 import AppKit
 import TapmixCore
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct PanelView: View {
     @ObservedObject var engine: AudioEngine
@@ -489,6 +490,7 @@ private struct EQPanel: View {
     @ObservedObject var engine: AudioEngine
     @State private var settings: EQSettings
     @State private var nightMode: Bool
+    @State private var importing = false
 
     init(bundleID: String, initial: EQSettings, initialNightMode: Bool, engine: AudioEngine) {
         self.bundleID = bundleID
@@ -535,6 +537,24 @@ private struct EQPanel: View {
             .controlSize(.mini)
             .help("Lift quiet dialogue and tame loud peaks for late-night listening")
 
+            HStack(spacing: 6) {
+                if settings.filters.isEmpty {
+                    Button("Import AutoEQ…") {
+                        importing = true
+                    }
+                } else {
+                    Text("\(settings.filters.count) AutoEQ filters")
+                        .font(.system(size: 9))
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Button("Clear") {
+                        settings.filters = []
+                        apply()
+                    }
+                }
+            }
+            .font(.caption)
+
             ForEach(0 ..< EQSettings.bandCount, id: \.self) { index in
                 HStack(spacing: 6) {
                     Text(Self.label(index))
@@ -573,6 +593,24 @@ private struct EQPanel: View {
         }
         .padding(12)
         .frame(width: 300)
+        .fileImporter(
+            isPresented: $importing,
+            allowedContentTypes: [UTType.plainText, UTType.data],
+            allowsMultipleSelection: false
+        ) { result in
+            guard case let .success(urls) = result, let url = urls.first else { return }
+            let accessed = url.startAccessingSecurityScopedResource()
+            defer {
+                if accessed {
+                    url.stopAccessingSecurityScopedResource()
+                }
+            }
+            guard let text = try? String(contentsOf: url, encoding: .utf8) else { return }
+            let filters = EQFilterParser.parse(text)
+            guard !filters.isEmpty else { return }
+            settings.filters = filters
+            apply()
+        }
     }
 
     private func apply() {

@@ -7,10 +7,13 @@ public struct EQSettings: Codable, Equatable {
 
     public var enabled: Bool
     public var gains: [Float]
+    /// Imported AutoEQ / parametric correction filters.
+    public var filters: [EQFilter]
 
-    public init(enabled: Bool = false, gains: [Float] = []) {
+    public init(enabled: Bool = false, gains: [Float] = [], filters: [EQFilter] = []) {
         self.enabled = enabled
         self.gains = Self.normalized(gains)
+        self.filters = Array(filters.prefix(EQFilterParser.maxFilters))
     }
 
     public var isFlat: Bool {
@@ -18,7 +21,7 @@ public struct EQSettings: Codable, Equatable {
     }
 
     public var isActive: Bool {
-        enabled && !isFlat
+        (enabled && !isFlat) || !filters.isEmpty
     }
 
     static func normalized(_ gains: [Float]) -> [Float] {
@@ -29,19 +32,21 @@ public struct EQSettings: Codable, Equatable {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case enabled, gains
+        case enabled, gains, filters
     }
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         enabled = try container.decodeIfPresent(Bool.self, forKey: .enabled) ?? false
         gains = Self.normalized(try container.decodeIfPresent([Float].self, forKey: .gains) ?? [])
+        filters = try container.decodeIfPresent([EQFilter].self, forKey: .filters) ?? []
     }
 
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(enabled, forKey: .enabled)
         try container.encode(gains, forKey: .gains)
+        try container.encode(filters, forKey: .filters)
     }
 }
 
