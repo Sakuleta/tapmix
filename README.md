@@ -26,6 +26,8 @@ no kernel extension, no virtual audio driver, and no proprietary code.
   reconnects
 - **Night mode** per app — lift quiet dialogue and tame loud peaks
 - **AutoEQ import** — load a `ParametricEQ.txt` headphone correction per app
+- **URL automation** — control volume, mute, boost and routing from Shortcuts,
+  Raycast or shell scripts
 - **Pinned apps** stay visible while idle; **hide** an app to remove it from
   Tapmix entirely; **search** filters the list
 - **Output volume and mute** for the current default output device
@@ -116,6 +118,21 @@ build; do not disable SIP or modify system security settings.
 Choose the modifier set from the keyboard menu in the footer: `⌥⌘`
 (default), `⌃⌥`, `⇧⌘` or **Off**. The choice is remembered. Hotkeys need no
 Accessibility permission.
+
+### Automation
+
+The `tapmix://` scheme accepts the app's bundle ID:
+
+```bash
+open "tapmix://set-volume?app=com.spotify.client&volume=40"
+open "tapmix://step-volume?app=com.spotify.client&delta=-5"
+open "tapmix://toggle-mute?app=com.spotify.client"
+open "tapmix://set-boost?app=com.brave.Browser&boost=2"
+open "tapmix://set-route?app=com.spotify.client&device=DEVICE-UID"
+```
+
+`volume` is 0-200, `boost` is 1-4, and an empty `device` returns the app to
+the system default. The same strings work in Shortcuts and Raycast.
 
 ### AutoEQ
 
