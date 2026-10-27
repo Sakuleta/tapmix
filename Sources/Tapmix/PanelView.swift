@@ -416,6 +416,14 @@ private struct AppRowView: View {
                             .accessibilityLabel("Pinned")
                     }
 
+                    if engine.isRecording(app.bundleID) {
+                        Image(systemName: "record.circle.fill")
+                            .font(.system(size: 8))
+                            .foregroundStyle(.red)
+                            .help("Recording")
+                            .accessibilityLabel("Recording")
+                    }
+
                     Text("\(Int((app.volume * 100).rounded()))%")
                         .font(.system(size: 10, design: .monospaced))
                         .foregroundStyle(app.volume > 1 || app.boost > 1 ? .orange : .secondary)
@@ -543,9 +551,33 @@ private struct AppRowView: View {
                 engine.setPinned(app.bundleID, !app.pinned, name: app.name)
             }
             Divider()
+            Button(engine.isRecording(app.bundleID) ? "Stop recording" : "Record audio…") {
+                toggleRecording()
+            }
+            Divider()
             Button("Hide from Tapmix") {
                 engine.setIgnored(app.bundleID, true, name: app.name)
             }
+        }
+    }
+
+    private func toggleRecording() {
+        if engine.isRecording(app.bundleID) {
+            engine.stopRecording(app.bundleID)
+            return
+        }
+
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = "\(app.name).wav"
+        panel.allowedContentTypes = [.wav]
+        panel.canCreateDirectories = true
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+
+        if !engine.startRecording(app.bundleID, to: url) {
+            let alert = NSAlert()
+            alert.messageText = "Cannot record \(app.name)"
+            alert.informativeText = "Start playback in the app first."
+            alert.runModal()
         }
     }
 

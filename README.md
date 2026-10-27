@@ -34,6 +34,7 @@ no kernel extension, no virtual audio driver, and no proprietary code.
 - **EQ response curve** — see the combined band/AutoEQ response while editing
 - **Local AutoEQ catalog** — point Tapmix at an AutoEQ results folder and search it
 - **On-demand update check** — ask the gear menu to compare against the latest GitHub release
+- **WAV recording** — record the processed audio of an app from its context menu
 - **Launch at login** — start Tapmix with the Mac from the gear menu
 - **Pinned apps** stay visible while idle; **hide** an app to remove it from
   Tapmix entirely; **search** filters the list
@@ -165,6 +166,16 @@ even when the 10-band switch is off. **Clear** removes the import. The file's
 To search a downloaded AutoEQ results folder, choose **AutoEQ → Browse
 folder…** once; Tapmix indexes the `ParametricEQ.txt` files locally and opens a
 searchable catalog. Nothing is downloaded by Tapmix.
+
+### Recording
+
+Right-click an app row and choose **Record audio…**; pick a destination and the
+post-processing output (volume, EQ, night mode, limiter) is written as 16-bit
+stereo WAV. **Stop recording** is in the same menu and a red dot marks the row.
+
+Apps with several audio processes get one file per process (`App-<id>.wav`).
+A route change replaces the tap and ends that app's recording; start it again
+after the switch.
 
 ### Homebrew
 
