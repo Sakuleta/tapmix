@@ -39,6 +39,7 @@ final class TapController: TapControlling {
     private var aggregateID: AudioObjectID = 0
     private var ioProcID: AudioDeviceIOProcID?
     private var ramp: Float = 0.002
+    private var limiter: LookaheadLimiter?
 
     // Realtime gain state. Aligned Float reads/writes are atomic on Apple silicon.
     private var targetGain: Float = 1
@@ -114,6 +115,7 @@ final class TapController: TapControlling {
 
         let sampleRate = nominalSampleRate(newAggregateID)
         ramp = AudioMath.rampCoefficient(sampleRate: sampleRate)
+        limiter = LookaheadLimiter(sampleRate: sampleRate)
         var newProcID: AudioDeviceIOProcID?
         status = AudioDeviceCreateIOProcIDWithBlock(&newProcID, newAggregateID, queue) { [weak self] _, input, _, output, _ in
             guard let self else {
@@ -197,7 +199,8 @@ final class TapController: TapControlling {
             plan: plan,
             targetGain: targetGain,
             currentGain: &currentGain,
-            rampCoefficient: ramp
+            rampCoefficient: ramp,
+            limiter: limiter
         )
     }
 

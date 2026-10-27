@@ -231,7 +231,7 @@ private struct AppRowView: View {
 
                     Text("\(Int((app.volume * 100).rounded()))%")
                         .font(.system(size: 10, design: .monospaced))
-                        .foregroundStyle(app.volume > 1 ? .orange : .secondary)
+                        .foregroundStyle(app.volume > 1 || app.boost > 1 ? .orange : .secondary)
                 }
 
                 HStack(spacing: 8) {
@@ -246,6 +246,30 @@ private struct AppRowView: View {
                     .foregroundStyle(app.muted ? .red : .secondary)
                     .help(app.muted ? "Unmute \(app.name)" : "Mute \(app.name)")
                     .accessibilityLabel(app.muted ? "Unmute \(app.name)" : "Mute \(app.name)")
+
+                    Menu {
+                        ForEach([1, 2, 3, 4], id: \.self) { value in
+                            Button {
+                                engine.setBoost(app.bundleID, Float(value))
+                            } label: {
+                                if Int(app.boost.rounded()) == value {
+                                    Label("\(value)×", systemImage: "checkmark")
+                                } else {
+                                    Text("\(value)×")
+                                }
+                            }
+                        }
+                    } label: {
+                        Text("\(Int(app.boost.rounded()))×")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(app.boost > 1 ? .orange : .secondary)
+                            .frame(width: 18)
+                    }
+                    .menuStyle(.borderlessButton)
+                    .menuIndicator(.hidden)
+                    .fixedSize()
+                    .help("Volume boost (soft-limited)")
+                    .accessibilityLabel("Volume boost for \(app.name)")
 
                     Slider(
                         value: Binding(

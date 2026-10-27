@@ -28,7 +28,8 @@ enum TapRender {
         plan: TapRenderPlan,
         targetGain: Float,
         currentGain: inout Float,
-        rampCoefficient: Float
+        rampCoefficient: Float,
+        limiter: LookaheadLimiter? = nil
     ) {
         let inputs = UnsafeMutableAudioBufferListPointer(UnsafeMutablePointer(mutating: input))
         let outputs = UnsafeMutableAudioBufferListPointer(output)
@@ -66,8 +67,14 @@ enum TapRender {
             gain += (goal - gain) * coefficient
 
             let tapBase = frame * tapChannels
-            let left = samples[tapBase]
-            let right = tapChannels == 1 ? left : samples[tapBase + 1]
+            var left = samples[tapBase] * gain
+            var right = (tapChannels == 1 ? samples[tapBase] : samples[tapBase + 1]) * gain
+
+            if let limiter {
+                let limited = limiter.process(left: left, right: right)
+                left = limited.left
+                right = limited.right
+            }
 
             var channelOffset = 0
             for buffer in outputs {
@@ -80,7 +87,7 @@ enum TapRender {
                         channels: channels,
                         globalChannelOffset: channelOffset,
                         totalOutputChannels: totalOutputChannels,
-                        gain: gain
+                        gain: 1
                     )
                 }
                 channelOffset += channels

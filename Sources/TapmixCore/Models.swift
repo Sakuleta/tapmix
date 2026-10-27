@@ -4,14 +4,35 @@ import Foundation
 public struct AppLevel: Codable, Equatable {
     public var volume: Float
     public var muted: Bool
+    /// Extra gain on top of `volume`: 1x, 2x, 3x or 4x.
+    public var boost: Float
 
-    public init(volume: Float = 1, muted: Bool = false) {
+    public init(volume: Float = 1, muted: Bool = false, boost: Float = 1) {
         self.volume = volume
         self.muted = muted
+        self.boost = boost
     }
 
     public var gain: Float {
-        muted ? 0 : min(max(volume, 0), 2)
+        muted ? 0 : min(max(volume, 0), 2) * min(max(boost, 1), 4)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case volume, muted, boost
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        volume = try container.decodeIfPresent(Float.self, forKey: .volume) ?? 1
+        muted = try container.decodeIfPresent(Bool.self, forKey: .muted) ?? false
+        boost = try container.decodeIfPresent(Float.self, forKey: .boost) ?? 1
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(volume, forKey: .volume)
+        try container.encode(muted, forKey: .muted)
+        try container.encode(boost, forKey: .boost)
     }
 }
 
@@ -60,6 +81,7 @@ public struct AppRow: Identifiable, Equatable {
     public let isPlaying: Bool
     public var volume: Float
     public var muted: Bool
+    public var boost: Float
 
     public init(
         bundleID: String,
@@ -67,7 +89,8 @@ public struct AppRow: Identifiable, Equatable {
         icon: NSImage?,
         isPlaying: Bool,
         volume: Float,
-        muted: Bool
+        muted: Bool,
+        boost: Float = 1
     ) {
         self.bundleID = bundleID
         self.name = name
@@ -75,5 +98,6 @@ public struct AppRow: Identifiable, Equatable {
         self.isPlaying = isPlaying
         self.volume = volume
         self.muted = muted
+        self.boost = boost
     }
 }

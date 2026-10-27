@@ -18,7 +18,8 @@ struct AppGroup {
             icon: icon,
             isPlaying: isPlaying,
             volume: level.volume,
-            muted: level.muted
+            muted: level.muted,
+            boost: level.boost
         )
     }
 }

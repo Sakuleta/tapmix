@@ -67,6 +67,14 @@ public final class AudioEngine: ObservableObject {
         updateRow(bundleID, volume: level.volume)
     }
 
+    public func setBoost(_ bundleID: String, _ boost: Float) {
+        var level = store.level(for: bundleID)
+        level.boost = min(max(boost, 1), 4)
+        store.set(level, for: bundleID)
+        tapManager.setGain(level.gain, for: bundleID)
+        updateRow(bundleID, boost: level.boost)
+    }
+
     public func toggleMute(_ bundleID: String) {
         var level = store.level(for: bundleID)
         level.muted.toggle()
@@ -171,13 +179,21 @@ public final class AudioEngine: ObservableObject {
         }
     }
 
-    private func updateRow(_ bundleID: String, volume: Float? = nil, muted: Bool? = nil) {
+    private func updateRow(
+        _ bundleID: String,
+        volume: Float? = nil,
+        muted: Bool? = nil,
+        boost: Float? = nil
+    ) {
         guard let index = apps.firstIndex(where: { $0.bundleID == bundleID }) else { return }
         if let volume {
             apps[index].volume = volume
         }
         if let muted {
             apps[index].muted = muted
+        }
+        if let boost {
+            apps[index].boost = boost
         }
     }
 }
