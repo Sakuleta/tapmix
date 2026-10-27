@@ -14,6 +14,7 @@ public final class AudioEngine: ObservableObject {
     @Published public private(set) var errorMessage: String?
     @Published public private(set) var hiddenApps: [HiddenApp] = []
     @Published public private(set) var outputDevices: [AudioDevice] = []
+    @Published public private(set) var isDucking = false
 
     /// Set by the panel while the output slider is being dragged so polling does not fight it.
     public var isEditingOutputVolume = false
@@ -27,10 +28,14 @@ public final class AudioEngine: ObservableObject {
     private var meterTimer: Timer?
     private var started = false
     private var lastHotKeyBundleID: String?
+    private var ducking = DuckingPolicy()
+    public private(set) var duckingEnabled: Bool
+    private static let duckingKey = "com.mardinli.tapmix.duckingEnabled"
 
     init(store: LevelStore = LevelStore(), preferences: AppPreferences = AppPreferences()) {
         self.store = store
         self.preferences = preferences
+        duckingEnabled = UserDefaults.standard.object(forKey: Self.duckingKey) as? Bool ?? true
     }
 
     // MARK: - Lifecycle
@@ -79,7 +84,7 @@ public final class AudioEngine: ObservableObject {
         var level = store.level(for: bundleID)
         level.volume = Float(min(max(volume, 0), 2))
         store.set(level, for: bundleID)
-        tapManager.setGain(level.gain, for: bundleID)
+        tapManager.setGain(effectiveGain(level, bundleID: bundleID), for: bundleID)
         updateRow(bundleID, volume: level.volume)
     }
 
@@ -121,7 +126,7 @@ public final class AudioEngine: ObservableObject {
         var level = store.level(for: bundleID)
         level.boost = min(max(boost, 1), 4)
         store.set(level, for: bundleID)
-        tapManager.setGain(level.gain, for: bundleID)
+        tapManager.setGain(effectiveGain(level, bundleID: bundleID), for: bundleID)
         updateRow(bundleID, boost: level.boost)
     }
 
@@ -129,7 +134,7 @@ public final class AudioEngine: ObservableObject {
         var level = store.level(for: bundleID)
         level.muted.toggle()
         store.set(level, for: bundleID)
-        tapManager.setGain(level.gain, for: bundleID)
+        tapManager.setGain(effectiveGain(level, bundleID: bundleID), for: bundleID)
         updateRow(bundleID, muted: level.muted)
     }
 
@@ -151,6 +156,13 @@ public final class AudioEngine: ObservableObject {
 
     public func toggleOutputMute() {
         setOutputMuted(!outputMuted)
+    }
+
+    public func setDuckingEnabled(_ enabled: Bool) {
+        duckingEnabled = enabled
+        UserDefaults.standard.set(enabled, forKey: Self.duckingKey)
+        updateDucking()
+        refresh()
     }
 
     // MARK: - Global hotkeys
@@ -184,7 +196,7 @@ public final class AudioEngine: ObservableObject {
         var level = store.level(for: bundleID)
         level.muted.toggle()
         store.set(level, for: bundleID)
-        tapManager.setGain(level.gain, for: bundleID)
+        tapManager.setGain(effectiveGain(level, bundleID: bundleID), for: bundleID)
         updateRow(bundleID, muted: level.muted)
         return ActiveVolumeState(
             bundleID: bundleID,
@@ -207,7 +219,42 @@ public final class AudioEngine: ObservableObject {
     private func tick() {
         guard started else { return }
         reloadOutput()
+        updateDucking()
         refresh()
+    }
+
+    private func updateDucking() {
+        guard duckingEnabled else {
+            let wasDucking = isDucking
+            ducking.reset()
+            isDucking = false
+            if wasDucking {
+                applyAllGains()
+            }
+            return
+        }
+
+        let wasDucking = isDucking
+        isDucking = ducking.update(
+            micActive: AudioSystem.inputIsActive(),
+            frontmost: NSWorkspace.shared.frontmostApplication?.bundleIdentifier,
+            now: Date()
+        )
+        if wasDucking != isDucking {
+            applyAllGains()
+        }
+    }
+
+    private func effectiveGain(_ level: AppLevel, bundleID: String) -> Float {
+        guard isDucking, !ducking.isExempt(bundleID: bundleID) else { return level.gain }
+        return level.gain * DuckingPolicy.duckFactor
+    }
+
+    private func applyAllGains() {
+        for bundleID in tapManager.activeBundleIDs {
+            let level = store.level(for: bundleID)
+            tapManager.setGain(effectiveGain(level, bundleID: bundleID), for: bundleID)
+        }
     }
 
     private func tickMeters() {
@@ -260,7 +307,10 @@ public final class AudioEngine: ObservableObject {
         )
 
         for group in groups {
-            tapManager.setGain(group.level.gain, for: group.bundleID)
+            tapManager.setGain(
+                effectiveGain(group.level, bundleID: group.bundleID),
+                for: group.bundleID
+            )
         }
 
         var desired: [TapManager.DesiredTap] = []
