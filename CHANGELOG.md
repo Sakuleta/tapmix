@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.1 — 2026-10-27
+
+- The panel opens attached to the menu bar; a stale window frame after the app
+  list changed while it was closed no longer leaves it one bar-height lower
+
 ## 0.3.0 — 2026-10-27
 
 - Tap planning is a pure `TapPlan` module; a failed HAL process read keeps the
