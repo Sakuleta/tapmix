@@ -6,6 +6,7 @@ import UniformTypeIdentifiers
 struct PanelView: View {
     @ObservedObject var engine: AudioEngine
     @ObservedObject private var hotkeys = HotKeyController.shared
+    @ObservedObject private var loginItem = LoginItemController.shared
     @State private var search = ""
     @State private var sceneName = ""
     @State private var showingSaveScene = false
@@ -279,6 +280,21 @@ struct PanelView: View {
                 .foregroundStyle(.tertiary)
             Spacer()
             Menu {
+                Toggle("Launch at login", isOn: Binding(
+                    get: { loginItem.isEnabled },
+                    set: { loginItem.setEnabled($0) }
+                ))
+            } label: {
+                Image(systemName: "gearshape")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.secondary)
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .fixedSize()
+            .help("Launch at login")
+            .accessibilityLabel("Launch at login")
+            Menu {
                 ForEach(HotKeyModifiers.allCases) { option in
                     Button {
                         hotkeys.setModifiers(option)
@@ -341,6 +357,18 @@ struct PanelView: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 9)
+        .alert("Could not update login item", isPresented: Binding(
+            get: { loginItem.errorMessage != nil },
+            set: { presented in
+                if !presented {
+                    loginItem.clearError()
+                }
+            }
+        )) {
+            Button("OK") { loginItem.clearError() }
+        } message: {
+            Text(loginItem.errorMessage ?? "")
+        }
     }
 
     private var divider: some View {
