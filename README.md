@@ -16,6 +16,8 @@ no kernel extension, no virtual audio driver, and no proprietary code.
 - **Live per-app level meter** under each slider
 - **10-band equalizer** per app with Flat, Bass Boost, Vocal Clarity, Treble
   and Loudness presets
+- **Per-app output routing** — send one app to the speakers and another to
+  headphones, or leave both on the system default
 - **Pinned apps** stay visible while idle; **hide** an app to remove it from
   Tapmix entirely; **search** filters the list
 - **Output volume and mute** for the current default output device
@@ -120,8 +122,9 @@ For every process that is producing audio:
 1. `CATapDescription(stereoMixdownOfProcesses:)` creates a **private process
    tap** with `muteBehavior = .mutedWhenTapped`. macOS silences the app's direct
    hardware path only while the tap is being read.
-2. A **private aggregate device** combines that tap with the current default
-   output device. No device shows up in Audio MIDI Setup or in other apps.
+2. A **private aggregate device** combines that tap with the app's target
+   output device (the system default unless the app is routed). No device shows
+   up in Audio MIDI Setup or in other apps.
 3. An `AudioDeviceIOProc` receives the tap audio on the real-time HAL thread,
    applies a ramped gain, and writes it to the output buffers.
 4. Tearing down the tap restores the app's normal audio path. Taps are removed
@@ -160,10 +163,10 @@ Tests/TapmixTests/
 - **Per-process, not per-app.** A browser tab cannot be controlled separately
   from another tab in the same browser; all processes belonging to one host app
   share a slider.
-- **No routing or EQ yet.** Every controlled app plays to the current default
-  output device.
 - **Output volume depends on the device.** The slider uses the HAL volume
   property; some HDMI/USB interfaces expose no software volume and ignore it.
+- **Routing gap.** Switching an app to another output rebuilds its tap, so a
+  brief gap is audible; there is no crossfade yet.
 - **Polling discovery.** The app list refreshes every second and meters at
   10 Hz; HAL listeners are a later optimization.
 - **Signing.** Ad-hoc signing is the fallback; TCC grants do not survive
@@ -171,7 +174,7 @@ Tests/TapmixTests/
 
 ## Roadmap
 
-1. Per-app output device routing (aggregate per target device)
+1. Device priority and automatic restore when hardware reconnects
 2. Loudness matching and AutoEQ headphone correction
 3. HAL listeners instead of polling; hotplug and sample-rate handling
 4. Global hotkeys and a volume HUD

@@ -7,17 +7,21 @@ public struct AppLevel: Codable, Equatable {
     /// Extra gain on top of `volume`: 1x, 2x, 3x or 4x.
     public var boost: Float
     public var eq: EQSettings
+    /// Explicit output device; `nil` follows the system default.
+    public var outputUID: String?
 
     public init(
         volume: Float = 1,
         muted: Bool = false,
         boost: Float = 1,
-        eq: EQSettings = EQSettings()
+        eq: EQSettings = EQSettings(),
+        outputUID: String? = nil
     ) {
         self.volume = volume
         self.muted = muted
         self.boost = boost
         self.eq = eq
+        self.outputUID = outputUID
     }
 
     public var gain: Float {
@@ -25,7 +29,7 @@ public struct AppLevel: Codable, Equatable {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case volume, muted, boost, eq
+        case volume, muted, boost, eq, outputUID
     }
 
     public init(from decoder: Decoder) throws {
@@ -34,6 +38,7 @@ public struct AppLevel: Codable, Equatable {
         muted = try container.decodeIfPresent(Bool.self, forKey: .muted) ?? false
         boost = try container.decodeIfPresent(Float.self, forKey: .boost) ?? 1
         eq = try container.decodeIfPresent(EQSettings.self, forKey: .eq) ?? EQSettings()
+        outputUID = try container.decodeIfPresent(String.self, forKey: .outputUID)
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -42,6 +47,7 @@ public struct AppLevel: Codable, Equatable {
         try container.encode(muted, forKey: .muted)
         try container.encode(boost, forKey: .boost)
         try container.encode(eq, forKey: .eq)
+        try container.encodeIfPresent(outputUID, forKey: .outputUID)
     }
 }
 
@@ -95,6 +101,7 @@ public struct AppRow: Identifiable, Equatable {
     /// Latest output peak in 0...1, updated by the meter timer.
     public var level: Float
     public var eq: EQSettings
+    public var routeUID: String?
 
     public init(
         bundleID: String,
@@ -106,7 +113,8 @@ public struct AppRow: Identifiable, Equatable {
         boost: Float = 1,
         pinned: Bool = false,
         level: Float = 0,
-        eq: EQSettings = EQSettings()
+        eq: EQSettings = EQSettings(),
+        routeUID: String? = nil
     ) {
         self.bundleID = bundleID
         self.name = name
@@ -118,6 +126,7 @@ public struct AppRow: Identifiable, Equatable {
         self.pinned = pinned
         self.level = level
         self.eq = eq
+        self.routeUID = routeUID
     }
 }
 

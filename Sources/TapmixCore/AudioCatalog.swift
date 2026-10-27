@@ -22,7 +22,8 @@ struct AppGroup {
             muted: level.muted,
             boost: level.boost,
             pinned: pinned,
-            eq: level.eq
+            eq: level.eq,
+            routeUID: level.outputUID
         )
     }
 }
