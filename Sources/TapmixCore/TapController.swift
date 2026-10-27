@@ -45,6 +45,8 @@ final class TapController: TapControlling {
     private var limiter: LookaheadLimiter?
     private var eqProcessor: EQProcessor?
     private var pendingEQ = EQSettings()
+    private var nightModeProcessor: NightModeProcessor?
+    private var pendingNightMode = false
 
     // Realtime gain state. Aligned Float reads/writes are atomic on Apple silicon.
     private var targetGain: Float = 1
@@ -67,6 +69,11 @@ final class TapController: TapControlling {
     func setEQ(_ settings: EQSettings) {
         pendingEQ = settings
         eqProcessor?.update(settings)
+    }
+
+    func setNightMode(_ enabled: Bool) {
+        pendingNightMode = enabled
+        nightModeProcessor?.setEnabled(enabled)
     }
 
     func takePeakLevel() -> Float {
@@ -135,6 +142,9 @@ final class TapController: TapControlling {
         let eq = EQProcessor(sampleRate: sampleRate)
         eq.update(pendingEQ)
         eqProcessor = eq
+        let night = NightModeProcessor(sampleRate: sampleRate)
+        night.setEnabled(pendingNightMode)
+        nightModeProcessor = night
         var newProcID: AudioDeviceIOProcID?
         status = AudioDeviceCreateIOProcIDWithBlock(&newProcID, newAggregateID, queue) { [weak self] _, input, _, output, _ in
             guard let self else {
@@ -220,6 +230,7 @@ final class TapController: TapControlling {
             currentGain: &currentGain,
             rampCoefficient: ramp,
             eq: eqProcessor,
+            nightMode: nightModeProcessor,
             limiter: limiter
         )
         peakLevel = max(peakLevel, peak)

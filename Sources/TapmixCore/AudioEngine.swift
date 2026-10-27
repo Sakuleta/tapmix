@@ -118,6 +118,14 @@ public final class AudioEngine: ObservableObject {
         refresh()
     }
 
+    public func setNightMode(_ bundleID: String, _ enabled: Bool) {
+        var level = store.level(for: bundleID)
+        level.nightMode = enabled
+        store.set(level, for: bundleID)
+        tapManager.setNightMode(enabled, for: bundleID)
+        updateRow(bundleID, nightMode: enabled)
+    }
+
     public func setEQ(_ bundleID: String, _ settings: EQSettings) {
         var level = store.level(for: bundleID)
         level.eq = settings
@@ -397,7 +405,8 @@ public final class AudioEngine: ObservableObject {
         muted: Bool? = nil,
         boost: Float? = nil,
         eq: EQSettings? = nil,
-        routeUID: String? = nil
+        routeUID: String? = nil,
+        nightMode: Bool? = nil
     ) {
         guard let index = apps.firstIndex(where: { $0.bundleID == bundleID }) else { return }
         if let volume {
@@ -414,6 +423,9 @@ public final class AudioEngine: ObservableObject {
         }
         if let routeUID {
             apps[index].routeUID = routeUID
+        }
+        if let nightMode {
+            apps[index].nightMode = nightMode
         }
     }
 }

@@ -24,6 +24,7 @@ no kernel extension, no virtual audio driver, and no proprietary code.
   to 30% and return when the call ends
 - **Preferred output** — pin a device and Tapmix switches back to it when it
   reconnects
+- **Night mode** per app — lift quiet dialogue and tame loud peaks
 - **Pinned apps** stay visible while idle; **hide** an app to remove it from
   Tapmix entirely; **search** filters the list
 - **Output volume and mute** for the current default output device
@@ -112,6 +113,13 @@ build; do not disable SIP or modify system security settings.
 - A small HUD appears near the top of the screen with the app name and level.
 
 Hotkeys are fixed for now; they need no Accessibility permission.
+
+### Night mode
+
+Open an app's EQ popover and switch on **Night mode**. Quiet material gets a
++3.5 dB lift, peaks above about -18 dBFS are compressed 4:1, and the existing
+limiter catches what is left. It is meant for late-night video and podcasts,
+not for critical listening.
 
 ### Preferred output
 
@@ -209,13 +217,15 @@ Tests/TapmixTests/
   ducking, and a browser-based call exempts the whole browser.
 - **Device priority reacts to connections only.** It does not fight a manual
   output switch while the preferred device stays connected.
+- **Night mode is a compressor, not loudness matching.** Heavy use can pump;
+  it is opt-in per app.
 - **Signing.** Ad-hoc signing is the fallback; TCC grants do not survive
   rebuilds without the stable identity described above.
 
 ## Roadmap
 
 1. Crossfade when a route or output device changes
-2. Loudness matching and AutoEQ headphone correction
+2. AutoEQ headphone correction and a parametric EQ
 3. HAL listeners instead of polling; hotplug and sample-rate handling
 4. Configurable hotkeys and media-key handling
 5. Pinned/active app list and ignore list

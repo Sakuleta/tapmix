@@ -31,6 +31,7 @@ enum TapRender {
         currentGain: inout Float,
         rampCoefficient: Float,
         eq: EQProcessor? = nil,
+        nightMode: NightModeProcessor? = nil,
         limiter: LookaheadLimiter? = nil
     ) -> Float {
         let inputs = UnsafeMutableAudioBufferListPointer(UnsafeMutablePointer(mutating: input))
@@ -75,6 +76,12 @@ enum TapRender {
 
             if let eq {
                 let processed = eq.process(left: left, right: right)
+                left = processed.left
+                right = processed.right
+            }
+
+            if let nightMode {
+                let processed = nightMode.process(left: left, right: right)
                 left = processed.left
                 right = processed.right
             }

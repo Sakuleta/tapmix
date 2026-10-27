@@ -36,6 +36,7 @@ final class TapManager {
     private var failures: [AudioObjectID: Failure] = [:]
     private var gains: [String: Float] = [:]
     private var eqs: [String: EQSettings] = [:]
+    private var nightModes: [String: Bool] = [:]
     private var tapOutputs: [AudioObjectID: String] = [:]
     private(set) var health: Health = .ok
 
@@ -60,6 +61,13 @@ final class TapManager {
         eqs[bundleID] = settings
         for tap in taps.values where tap.bundleID == bundleID {
             tap.setEQ(settings)
+        }
+    }
+
+    func setNightMode(_ enabled: Bool, for bundleID: String) {
+        nightModes[bundleID] = enabled
+        for tap in taps.values where tap.bundleID == bundleID {
+            tap.setNightMode(enabled)
         }
     }
 
@@ -113,6 +121,7 @@ final class TapManager {
                 try tap.start()
                 tap.setGain(gains[desiredTap.bundleID] ?? 1)
                 tap.setEQ(eqs[desiredTap.bundleID] ?? EQSettings())
+                tap.setNightMode(nightModes[desiredTap.bundleID] ?? false)
                 taps[id] = tap
                 tapOutputs[id] = desiredTap.outputUID
                 failures[id] = nil

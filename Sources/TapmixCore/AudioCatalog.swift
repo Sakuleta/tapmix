@@ -23,7 +23,8 @@ struct AppGroup {
             boost: level.boost,
             pinned: pinned,
             eq: level.eq,
-            routeUID: level.outputUID
+            routeUID: level.outputUID,
+            nightMode: level.nightMode
         )
     }
 }

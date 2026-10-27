@@ -20,6 +20,7 @@ taps. No kernel extension, no virtual audio driver, no third-party dependencies.
 - `TapController` — one tap + one private aggregate + one IO proc.
 - `TapRender` — frame-major buffer copy/gain; the realtime seam.
 - `EQProcessor` — ten peaking biquads per channel, coefficients built off-thread.
+- `NightModeProcessor` — stereo-linked leveler before the limiter.
 - `EQSettings` — per-app bands and presets; persisted in `AppLevel`.
 - `AudioEngine` — 1s poll, UI state, user actions, hotkey target.
 - `DuckingPolicy` — microphone-activity hysteresis; never reads audio.
