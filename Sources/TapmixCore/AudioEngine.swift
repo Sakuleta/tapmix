@@ -26,6 +26,7 @@ public final class AudioEngine: ObservableObject {
     private var timer: Timer?
     private var meterTimer: Timer?
     private var started = false
+    private var lastHotKeyBundleID: String?
 
     init(store: LevelStore = LevelStore(), preferences: AppPreferences = AppPreferences()) {
         self.store = store
@@ -150,6 +151,55 @@ public final class AudioEngine: ObservableObject {
 
     public func toggleOutputMute() {
         setOutputMuted(!outputMuted)
+    }
+
+    // MARK: - Global hotkeys
+
+    public func stepActiveVolume(by delta: Float) -> ActiveVolumeState? {
+        guard let bundleID = activeBundleID(),
+              let row = apps.first(where: { $0.bundleID == bundleID })
+        else { return nil }
+
+        lastHotKeyBundleID = bundleID
+        var level = store.level(for: bundleID)
+        level.volume = min(max(row.volume + delta, 0), 2)
+        level.muted = false
+        store.set(level, for: bundleID)
+        tapManager.setGain(level.gain, for: bundleID)
+        updateRow(bundleID, volume: level.volume, muted: false)
+        return ActiveVolumeState(
+            bundleID: bundleID,
+            name: row.name,
+            volume: level.volume,
+            muted: false
+        )
+    }
+
+    public func toggleActiveMute() -> ActiveVolumeState? {
+        guard let bundleID = activeBundleID(),
+              let row = apps.first(where: { $0.bundleID == bundleID })
+        else { return nil }
+
+        lastHotKeyBundleID = bundleID
+        var level = store.level(for: bundleID)
+        level.muted.toggle()
+        store.set(level, for: bundleID)
+        tapManager.setGain(level.gain, for: bundleID)
+        updateRow(bundleID, muted: level.muted)
+        return ActiveVolumeState(
+            bundleID: bundleID,
+            name: row.name,
+            volume: level.volume,
+            muted: level.muted
+        )
+    }
+
+    private func activeBundleID() -> String? {
+        ActiveAppSelector.bundleID(
+            apps: apps,
+            frontmost: NSWorkspace.shared.frontmostApplication?.bundleIdentifier,
+            lastActive: lastHotKeyBundleID
+        )
     }
 
     // MARK: - Polling
