@@ -1,6 +1,7 @@
 import AudioToolbox
 import CoreAudio
 import Foundation
+import Synchronization
 import os
 
 enum TapError: LocalizedError {
@@ -34,7 +35,8 @@ final class TapController: TapControlling {
     private var peakLevel: Float = 0
     private(set) var running = false
 
-    var isRecording: Bool { recorder?.isActive ?? false }
+    /// Read from the UI while the recorder itself is installed on the tap queue.
+    var isRecording: Bool { recording.load(ordering: .acquiring) }
 
     private let outputDeviceUID: String
     private let log = Logger(subsystem: "com.mardinli.tapmix", category: "tap")
@@ -53,6 +55,7 @@ final class TapController: TapControlling {
     private var mono = false
     private var sampleRate: Double = 48_000
     private var recorder: TapRecorder?
+    private let recording = Atomic<Bool>(false)
     private var pendingAudioUnit: AudioUnitSelection?
     private var audioUnitHost: AudioUnitHost?
 
@@ -118,13 +121,22 @@ final class TapController: TapControlling {
     }
 
     func startRecording(to url: URL) throws {
+        // File creation stays off the audio queue; publishing the recorder lands
+        // between callbacks so the render thread never sees a half swap.
         let recorder = try TapRecorder(url: url, sampleRate: sampleRate)
-        self.recorder?.stop()
-        self.recorder = recorder
+        queue.sync {
+            self.recorder?.stop()
+            self.recorder = recorder
+        }
+        recording.store(true, ordering: .releasing)
     }
 
     func stopRecording() {
-        recorder?.stop()
+        queue.sync {
+            recorder?.stop()
+            recorder = nil
+        }
+        recording.store(false, ordering: .releasing)
     }
 
     func takePeakLevel() -> Float {
@@ -235,16 +247,23 @@ final class TapController: TapControlling {
 
     func stop() {
         guard running || aggregateID != 0 || tapID != 0 else { return }
-        stopRecording()
-        recorder = nil
-        audioUnitHost = nil
-        running = false
 
+        // Stop the callback before freeing anything it can still reach, then
+        // release the host and recorder on the tap queue so the last reference
+        // cannot drop on the realtime thread.
         if aggregateID != 0, let ioProcID {
             AudioDeviceStop(aggregateID, ioProcID)
             AudioDeviceDestroyIOProcID(aggregateID, ioProcID)
         }
         ioProcID = nil
+        running = false
+
+        queue.sync {
+            recorder?.stop()
+            recorder = nil
+            audioUnitHost = nil
+        }
+        recording.store(false, ordering: .releasing)
 
         if aggregateID != 0 {
             AudioHardwareDestroyAggregateDevice(aggregateID)

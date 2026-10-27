@@ -46,6 +46,9 @@ taps. No kernel extension, no virtual audio driver, no third-party dependencies.
 `TapController.render` and `TapRender` must not allocate, lock, log, message
 Objective-C, or call back into the main actor. Keep the tap interleaved Float32;
 the start-time format guard enforces it. No `Array` inside the callback.
+Values shared with the render thread cross it through `Synchronization.Atomic`
+with explicit ordering; the EQ banks are published, never copied. Stop the IO
+proc before releasing a recorder or an Audio Unit.
 
 ## Permissions
 The app needs System Audio Recording (TCC). Launch via LaunchServices (`open`).
