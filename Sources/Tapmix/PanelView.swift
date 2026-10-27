@@ -7,6 +7,8 @@ struct PanelView: View {
     @ObservedObject var engine: AudioEngine
     @ObservedObject private var hotkeys = HotKeyController.shared
     @State private var search = ""
+    @State private var sceneName = ""
+    @State private var showingSaveScene = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -25,6 +27,15 @@ struct PanelView: View {
         }
         .frame(width: 360, height: panelHeight)
         .background(Color(nsColor: .windowBackgroundColor))
+        .alert("Save current mix", isPresented: $showingSaveScene) {
+            TextField("Name", text: $sceneName)
+            Button("Save") {
+                engine.saveScene(named: sceneName)
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Saves levels, EQ, routing and night mode for every adjusted app.")
+        }
     }
 
     private var filteredApps: [AppRow] {
@@ -52,6 +63,37 @@ struct PanelView: View {
             }
 
             Spacer()
+
+            Menu {
+                Button("Save current mix…") {
+                    sceneName = "Scene \(engine.scenes.count + 1)"
+                    showingSaveScene = true
+                }
+                if !engine.scenes.isEmpty {
+                    Divider()
+                    ForEach(engine.scenes) { scene in
+                        Button(scene.name) {
+                            engine.applyScene(scene)
+                        }
+                    }
+                    Divider()
+                    Menu("Delete scene") {
+                        ForEach(engine.scenes) { scene in
+                            Button(scene.name) {
+                                engine.deleteScene(scene.id)
+                            }
+                        }
+                    }
+                }
+            } label: {
+                Image(systemName: "theatermasks")
+                    .font(.system(size: 12))
+                    .frame(width: 22, height: 22)
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .help("Saved mixes")
+            .accessibilityLabel("Saved mixes")
 
             Button {
                 engine.retry()
