@@ -26,6 +26,20 @@ public struct AudioProcess: Hashable {
     }
 }
 
+public struct AudioDevice: Hashable, Identifiable {
+    public let objectID: AudioObjectID
+    public let uid: String
+    public let name: String
+
+    public var id: String { uid }
+
+    public init(objectID: AudioObjectID, uid: String, name: String) {
+        self.objectID = objectID
+        self.uid = uid
+        self.name = name
+    }
+}
+
 /// Thin wrappers around the Core Audio HAL properties this app needs.
 enum AudioSystem {
     static let systemObject = AudioObjectID(kAudioObjectSystemObject)
@@ -73,6 +87,26 @@ enum AudioSystem {
 
     static func deviceName(_ device: AudioObjectID) -> String? {
         readString(device, kAudioDevicePropertyDeviceNameCFString)
+    }
+
+    /// Every device with at least one output stream, excluding our private aggregates.
+    static func outputDevices() -> [AudioDevice] {
+        objectList(kAudioHardwarePropertyDevices).compactMap { device in
+            guard let uid = deviceUID(device),
+                  let name = deviceName(device),
+                  !name.hasPrefix("Tapmix ")
+            else { return nil }
+
+            var address = propertyAddress(kAudioDevicePropertyStreams, scope: scopeOutput)
+            var size: UInt32 = 0
+            guard AudioObjectGetPropertyDataSize(device, &address, 0, nil, &size) == noErr,
+                  size > 0
+            else { return nil }
+
+            return AudioDevice(objectID: device, uid: uid, name: name)
+        }.sorted {
+            $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+        }
     }
 
     static func outputVolume(_ device: AudioObjectID) -> Float? {

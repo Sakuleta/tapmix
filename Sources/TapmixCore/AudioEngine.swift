@@ -13,6 +13,7 @@ public final class AudioEngine: ObservableObject {
     @Published public private(set) var outputMuted = false
     @Published public private(set) var errorMessage: String?
     @Published public private(set) var hiddenApps: [HiddenApp] = []
+    @Published public private(set) var outputDevices: [AudioDevice] = []
 
     /// Set by the panel while the output slider is being dragged so polling does not fight it.
     public var isEditingOutputVolume = false
@@ -99,6 +100,14 @@ public final class AudioEngine: ObservableObject {
         refresh()
     }
 
+    public func setRoute(_ bundleID: String, _ outputUID: String?) {
+        var level = store.level(for: bundleID)
+        level.outputUID = outputUID
+        store.set(level, for: bundleID)
+        updateRow(bundleID, routeUID: outputUID)
+        refresh()
+    }
+
     public func setEQ(_ bundleID: String, _ settings: EQSettings) {
         var level = store.level(for: bundleID)
         level.eq = settings
@@ -167,10 +176,7 @@ public final class AudioEngine: ObservableObject {
     private func reloadOutput() {
         guard let device = AudioSystem.defaultOutputDevice() else {
             outputName = "No output device"
-            if outputUID != nil {
-                outputUID = nil
-                tapManager.stopAll()
-            }
+            outputUID = nil
             return
         }
 
@@ -189,6 +195,11 @@ public final class AudioEngine: ObservableObject {
     private func refresh() {
         let processes = AudioSystem.processes()
         let running = RunningAppDescriptor.snapshot(NSWorkspace.shared.runningApplications)
+        let devices = AudioSystem.outputDevices()
+        if devices != outputDevices {
+            outputDevices = devices
+        }
+        let availableUIDs = Set(devices.map(\.uid))
         let groups = AudioCatalog.groups(
             processes: processes,
             running: running,
@@ -204,6 +215,9 @@ public final class AudioEngine: ObservableObject {
 
         var desired: [TapManager.DesiredTap] = []
         for group in groups {
+            let route = group.level.outputUID.flatMap { availableUIDs.contains($0) ? $0 : nil }
+            guard let target = route ?? outputUID else { continue }
+
             for processID in group.processObjectIDs
             where group.playingProcessObjectIDs.contains(processID)
                 || tapManager.activeProcessIDs.contains(processID)
@@ -212,16 +226,17 @@ public final class AudioEngine: ObservableObject {
                     TapManager.DesiredTap(
                         processObjectID: processID,
                         bundleID: group.bundleID,
-                        displayName: group.name
+                        displayName: group.name,
+                        outputUID: target
                     )
                 )
             }
         }
 
-        if let outputUID {
-            tapManager.sync(desired: desired, outputUID: outputUID)
-        } else {
+        if outputUID == nil, desired.isEmpty {
             tapManager.stopAll()
+        } else {
+            tapManager.sync(desired: desired)
         }
 
         let previousLevels = Dictionary(uniqueKeysWithValues: apps.map { ($0.bundleID, $0.level) })
@@ -248,7 +263,8 @@ public final class AudioEngine: ObservableObject {
         volume: Float? = nil,
         muted: Bool? = nil,
         boost: Float? = nil,
-        eq: EQSettings? = nil
+        eq: EQSettings? = nil,
+        routeUID: String? = nil
     ) {
         guard let index = apps.firstIndex(where: { $0.bundleID == bundleID }) else { return }
         if let volume {
@@ -262,6 +278,9 @@ public final class AudioEngine: ObservableObject {
         }
         if let eq {
             apps[index].eq = eq
+        }
+        if let routeUID {
+            apps[index].routeUID = routeUID
         }
     }
 }

@@ -9,6 +9,7 @@ final class TapManager {
         let processObjectID: AudioObjectID
         let bundleID: String
         let displayName: String
+        let outputUID: String
     }
 
     enum Health: Equatable {
@@ -35,7 +36,7 @@ final class TapManager {
     private var failures: [AudioObjectID: Failure] = [:]
     private var gains: [String: Float] = [:]
     private var eqs: [String: EQSettings] = [:]
-    private var outputUID: String?
+    private var tapOutputs: [AudioObjectID: String] = [:]
     private(set) var health: Health = .ok
 
     init(
@@ -78,39 +79,42 @@ final class TapManager {
         }
     }
 
-    func sync(desired: [DesiredTap], outputUID: String) {
+    func sync(desired: [DesiredTap]) {
         let unique = Dictionary(desired.map { ($0.processObjectID, $0) }, uniquingKeysWith: { first, _ in first })
         let desiredIDs = Set(unique.keys)
-
-        if self.outputUID != outputUID {
-            stopAllTaps()
-            failures.removeAll()
-            self.outputUID = outputUID
-        }
 
         let stale = Array(taps.keys).filter { !desiredIDs.contains($0) }
         for id in stale {
             taps[id]?.stop()
             taps[id] = nil
+            tapOutputs[id] = nil
             failures[id] = nil
         }
 
         for id in desiredIDs.sorted() {
             guard let desiredTap = unique[id] else { continue }
             if let tap = taps[id] {
-                tap.setGain(gains[tap.bundleID] ?? 1)
-                continue
+                if tapOutputs[id] == desiredTap.outputUID {
+                    tap.setGain(gains[tap.bundleID] ?? 1)
+                    tap.setEQ(eqs[tap.bundleID] ?? EQSettings())
+                    continue
+                }
+                tap.stop()
+                taps[id] = nil
+                tapOutputs[id] = nil
+                failures[id] = nil
             }
             if let failure = failures[id], now() < failure.retryAt {
                 continue
             }
 
-            let tap = makeTap(id, desiredTap.bundleID, outputUID)
+            let tap = makeTap(id, desiredTap.bundleID, desiredTap.outputUID)
             do {
                 try tap.start()
                 tap.setGain(gains[desiredTap.bundleID] ?? 1)
                 tap.setEQ(eqs[desiredTap.bundleID] ?? EQSettings())
                 taps[id] = tap
+                tapOutputs[id] = desiredTap.outputUID
                 failures[id] = nil
             } catch {
                 recordFailure(for: desiredTap, detail: error.localizedDescription)
@@ -137,6 +141,7 @@ final class TapManager {
             tap.stop()
         }
         taps.removeAll()
+        tapOutputs.removeAll()
     }
 
     /// A stalled tap stops only itself; every healthy tap keeps running.

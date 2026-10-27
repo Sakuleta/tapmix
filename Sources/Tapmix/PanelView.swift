@@ -327,6 +327,40 @@ private struct AppRowView: View {
                         EQPanel(bundleID: app.bundleID, initial: app.eq, engine: engine)
                     }
 
+                    Menu {
+                        Button {
+                            engine.setRoute(app.bundleID, nil)
+                        } label: {
+                            if app.routeUID == nil {
+                                Label("System Default", systemImage: "checkmark")
+                            } else {
+                                Text("System Default")
+                            }
+                        }
+                        Divider()
+                        ForEach(engine.outputDevices) { device in
+                            Button {
+                                engine.setRoute(app.bundleID, device.uid)
+                            } label: {
+                                if app.routeUID == device.uid {
+                                    Label(device.name, systemImage: "checkmark")
+                                } else {
+                                    Text(device.name)
+                                }
+                            }
+                        }
+                    } label: {
+                        Image(systemName: "hifispeaker")
+                            .font(.system(size: 10))
+                            .foregroundStyle(app.routeUID == nil ? .secondary : Color.accentColor)
+                            .frame(width: 14)
+                    }
+                    .menuStyle(.borderlessButton)
+                    .menuIndicator(.hidden)
+                    .fixedSize()
+                    .help("Output for \(app.name)")
+                    .accessibilityLabel("Output for \(app.name)")
+
                     Slider(
                         value: Binding(
                             get: { Double(app.volume) },

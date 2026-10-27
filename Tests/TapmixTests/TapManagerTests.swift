@@ -70,12 +70,22 @@ final class TapManagerTests: XCTestCase {
         )
     }
 
-    private func desired(_ id: AudioObjectID, _ bundleID: String, _ name: String = "App") -> TapManager.DesiredTap {
-        TapManager.DesiredTap(processObjectID: id, bundleID: bundleID, displayName: name)
+    private func desired(
+        _ id: AudioObjectID,
+        _ bundleID: String,
+        _ name: String = "App",
+        output: String = "dev-1"
+    ) -> TapManager.DesiredTap {
+        TapManager.DesiredTap(
+            processObjectID: id,
+            bundleID: bundleID,
+            displayName: name,
+            outputUID: output
+        )
     }
 
-    private func sync(_ taps: [TapManager.DesiredTap], output: String = "dev-1") {
-        manager.sync(desired: taps, outputUID: output)
+    private func sync(_ taps: [TapManager.DesiredTap]) {
+        manager.sync(desired: taps)
     }
 
     func testSyncStartsOneTapPerDesiredProcess() {
@@ -184,16 +194,31 @@ final class TapManagerTests: XCTestCase {
     }
 
     func testOutputDeviceChangeRebuildsAll() {
-        let a = desired(1, "com.a")
+        let first = desired(1, "com.a", output: "dev-1")
+        let second = desired(1, "com.a", output: "dev-2")
 
-        sync([a], output: "dev-1")
+        sync([first])
         XCTAssertEqual(outputUIDs, ["dev-1"])
 
-        sync([a], output: "dev-2")
+        sync([second])
         XCTAssertEqual(created.count, 2)
         XCTAssertEqual(created[0].stopCount, 1)
         XCTAssertEqual(outputUIDs, ["dev-1", "dev-2"])
         XCTAssertEqual(manager.activeProcessIDs, [1])
+    }
+
+    func testRouteChangeRebuildsOnlyThatTap() {
+        let a = desired(1, "com.a", output: "dev-2")
+        let b = desired(2, "com.b", output: "dev-1")
+        sync([a, b])
+
+        let moved = desired(2, "com.b", output: "dev-2")
+        sync([a, moved])
+
+        XCTAssertEqual(created[0].stopCount, 0)
+        XCTAssertEqual(created[1].stopCount, 1)
+        XCTAssertEqual(created.count, 3)
+        XCTAssertEqual(outputUIDs, ["dev-2", "dev-1", "dev-2"])
     }
 
     func testGainAppliesToExistingAndNewTaps() {
