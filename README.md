@@ -83,6 +83,12 @@ with the minus button and relaunch.
 The app bundle must be launched through LaunchServices (`open Tapmix.app`)
 so the permission is attributed to Tapmix, not to Terminal.
 
+A local build is a different app as far as macOS is concerned: `build-app.sh`
+signs it with the development identity and gives it the bundle ID
+`com.mardinli.tapmix.dev`, so its audio permission is stored separately from the
+notarized `/Applications` copy. Mixing the two under one bundle ID makes macOS
+ask again on every launch.
+
 ### Stable local signing (recommended)
 
 Ad-hoc signing gets a new code hash on every rebuild, so macOS asks for audio
