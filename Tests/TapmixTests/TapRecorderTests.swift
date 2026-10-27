@@ -1,3 +1,5 @@
+import AudioToolbox
+import CoreAudio
 import XCTest
 @testable import TapmixCore
 
@@ -31,5 +33,35 @@ final class TapRecorderTests: XCTestCase {
         }
         XCTAssertEqual(first, 16_383)
         XCTAssertEqual(second, -16_383)
+    }
+
+    func testRecordsFromAnInterleavedBufferList() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("tapmix-recording-\(UUID().uuidString).wav")
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let frames = 1_000
+        let samples = UnsafeMutablePointer<Float>.allocate(capacity: frames * 2)
+        let list = AudioBufferList.allocate(maximumBuffers: 1)
+        defer {
+            samples.deallocate()
+            free(list.unsafeMutablePointer)
+        }
+        for index in 0 ..< frames {
+            samples[index * 2] = 0.25
+            samples[index * 2 + 1] = -0.25
+        }
+        list[0] = AudioBuffer(
+            mNumberChannels: 2,
+            mDataByteSize: UInt32(frames * 2 * MemoryLayout<Float>.size),
+            mData: samples
+        )
+
+        let recorder = try TapRecorder(url: url, sampleRate: 8_000)
+        recorder.write(bufferList: list.unsafeMutablePointer)
+        recorder.stop()
+
+        let data = try Data(contentsOf: url)
+        XCTAssertEqual(data.count, 44 + frames * 4)
     }
 }

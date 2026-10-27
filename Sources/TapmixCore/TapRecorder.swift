@@ -1,3 +1,4 @@
+import CoreAudio
 import Foundation
 
 /// Records the post-processing stereo output of one tap as 16-bit PCM WAV.
@@ -60,6 +61,43 @@ final class TapRecorder {
         buffer[base] = left
         buffer[base + 1] = right
         writeIndex = next
+    }
+
+    /// Realtime-safe append of one rendered buffer, planar or interleaved.
+    /// Channels past the first two are ignored.
+    @inline(__always)
+    func write(bufferList: UnsafeMutablePointer<AudioBufferList>) {
+        guard isActive else { return }
+        let buffers = UnsafeMutableAudioBufferListPointer(bufferList)
+
+        var leftBase: UnsafeMutablePointer<Float>?
+        var rightBase: UnsafeMutablePointer<Float>?
+        var leftStride = 1
+        var rightStride = 1
+        var globalChannel = 0
+        var frames = capacityFrames
+
+        for buffer in buffers {
+            let channels = max(1, Int(buffer.mNumberChannels))
+            frames = min(frames, Int(buffer.mDataByteSize) / (MemoryLayout<Float>.size * channels))
+            if let data = buffer.mData?.assumingMemoryBound(to: Float.self) {
+                if globalChannel == 0 {
+                    leftBase = data
+                    leftStride = channels
+                }
+                if globalChannel <= 1, globalChannel + channels > 1 {
+                    rightBase = data.advanced(by: 1 - globalChannel)
+                    rightStride = channels
+                }
+            }
+            globalChannel += channels
+        }
+
+        guard let leftBase, frames > 0 else { return }
+        for frame in 0 ..< frames {
+            let left = leftBase[frame * leftStride]
+            write(left: left, right: rightBase?[frame * rightStride] ?? left)
+        }
     }
 
     func stop() {
