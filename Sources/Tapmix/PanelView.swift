@@ -26,6 +26,8 @@ struct PanelView: View {
         }
         .frame(width: 360, height: panelHeight)
         .background(PanelSurface())
+        .onAppear { engine.setPanelVisible(true) }
+        .onDisappear { engine.setPanelVisible(false) }
         .alert("Save current mix", isPresented: $showingSaveScene) {
             TextField("Name", text: $sceneName)
             Button("Save") {
