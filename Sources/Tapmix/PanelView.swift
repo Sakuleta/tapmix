@@ -14,20 +14,18 @@ struct PanelView: View {
     var body: some View {
         VStack(spacing: 0) {
             header
-            divider
             outputSection
-            divider
 
             if let error = engine.errorMessage {
                 errorBanner(error)
             }
 
             appSection
-            divider
+            Hairline(inset: 0)
             footer
         }
         .frame(width: 360, height: panelHeight)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(PanelSurface())
         .alert("Save current mix", isPresented: $showingSaveScene) {
             TextField("Name", text: $sceneName)
             Button("Save") {
@@ -48,14 +46,15 @@ struct PanelView: View {
         // Keep the panel height stable while searching so MenuBarExtra does not
         // resize (and leave a blank gap) on every keystroke.
         let visibleRows = min(max(engine.apps.count, 1), 6)
-        return min(500, 244 + CGFloat(visibleRows) * 58)
+        return min(500, 214 + CGFloat(visibleRows) * 58)
     }
 
     private var header: some View {
         HStack(spacing: 10) {
             Image(systemName: "waveform.circle.fill")
-                .font(.system(size: 26))
+                .font(.system(size: 25))
                 .foregroundStyle(.tint)
+                .frame(width: 28, height: 28)
 
             VStack(alignment: .leading, spacing: 1) {
                 Text("Tapmix")
@@ -92,6 +91,7 @@ struct PanelView: View {
                 Image(systemName: "theatermasks")
                     .font(.system(size: 12))
                     .frame(width: 22, height: 22)
+                    .hoverHighlight()
             }
             .menuStyle(.borderlessButton)
             .menuIndicator(.hidden)
@@ -104,8 +104,9 @@ struct PanelView: View {
                 Image(systemName: "arrow.clockwise")
                     .font(.system(size: 12, weight: .semibold))
                     .frame(width: 22, height: 22)
+                    .hoverHighlight()
             }
-            .buttonStyle(.plain)
+            .buttonStyle(PressableStyle())
             .foregroundStyle(.secondary)
             .help("Refresh audio apps")
         }
@@ -114,7 +115,7 @@ struct PanelView: View {
     }
 
     private var outputSection: some View {
-        VStack(spacing: 7) {
+        VStack(spacing: 8) {
             HStack(spacing: 8) {
                 Image(systemName: "hifispeaker.fill")
                     .font(.system(size: 12))
@@ -156,6 +157,8 @@ struct PanelView: View {
                     Image(systemName: engine.preferredOutputUID == nil ? "arrow.left.arrow.right" : "pin.fill")
                         .font(.system(size: 10))
                         .foregroundStyle(engine.preferredOutputUID == nil ? .secondary : Color.accentColor)
+                        .frame(width: 20, height: 20)
+                        .hoverHighlight()
                 }
                 .menuStyle(.borderlessButton)
                 .menuIndicator(.hidden)
@@ -190,8 +193,11 @@ struct PanelView: View {
                 .accessibilityValue("\(Int((engine.outputVolume * 100).rounded())) percent")
             }
         }
-        .padding(.horizontal, 14)
+        .padding(.horizontal, 12)
         .padding(.vertical, 10)
+        .panelCard()
+        .padding(.horizontal, 10)
+        .padding(.bottom, 8)
     }
 
     private var appSection: some View {
@@ -228,10 +234,18 @@ struct PanelView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding(.horizontal, 24)
             } else if filteredApps.isEmpty {
-                Text("No matching apps")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                VStack(spacing: 7) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 19, weight: .light))
+                        .foregroundStyle(.tertiary)
+                    Text("No apps match “\(search)”")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .padding(.horizontal, 24)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView {
                     LazyVStack(spacing: 4) {
@@ -240,7 +254,8 @@ struct PanelView: View {
                         }
                     }
                     .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
+                    .padding(.top, 4)
+                    .padding(.bottom, 8)
                 }
             }
         }
@@ -274,7 +289,7 @@ struct PanelView: View {
     }
 
     private var footer: some View {
-        HStack {
+        HStack(spacing: 2) {
             Text("Open source · MIT")
                 .font(.system(size: 10))
                 .foregroundStyle(.tertiary)
@@ -292,6 +307,8 @@ struct PanelView: View {
                 Image(systemName: "gearshape")
                     .font(.system(size: 10))
                     .foregroundStyle(.secondary)
+                    .frame(width: 22, height: 22)
+                    .hoverHighlight()
             }
             .menuStyle(.borderlessButton)
             .menuIndicator(.hidden)
@@ -314,6 +331,8 @@ struct PanelView: View {
                 Image(systemName: "keyboard")
                     .font(.system(size: 10))
                     .foregroundStyle(hotkeys.modifiers == .off ? .tertiary : .secondary)
+                    .frame(width: 22, height: 22)
+                    .hoverHighlight()
             }
             .menuStyle(.borderlessButton)
             .menuIndicator(.hidden)
@@ -329,6 +348,8 @@ struct PanelView: View {
                 Image(systemName: engine.isDucking ? "speaker.wave.1.fill" : "speaker.wave.1")
                     .font(.system(size: 10))
                     .foregroundStyle(engine.isDucking ? Color.orange : .secondary)
+                    .frame(width: 22, height: 22)
+                    .hoverHighlight()
             }
             .menuStyle(.borderlessButton)
             .menuIndicator(.hidden)
@@ -345,6 +366,8 @@ struct PanelView: View {
                 } label: {
                     Label("\(engine.hiddenApps.count)", systemImage: "eye.slash")
                         .font(.system(size: 10))
+                        .frame(height: 22)
+                        .hoverHighlight()
                 }
                 .menuStyle(.borderlessButton)
                 .menuIndicator(.hidden)
@@ -355,12 +378,16 @@ struct PanelView: View {
             Button("Quit") {
                 NSApplication.shared.terminate(nil)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(PressableStyle())
             .font(.system(size: 11))
             .foregroundStyle(.secondary)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 4)
+            .hoverHighlight(radius: 5)
+            .padding(.leading, 4)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 9)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
         .alert("Could not update login item", isPresented: Binding(
             get: { loginItem.errorMessage != nil },
             set: { presented in
@@ -373,10 +400,6 @@ struct PanelView: View {
         } message: {
             Text(loginItem.errorMessage ?? "")
         }
-    }
-
-    private var divider: some View {
-        Divider().opacity(0.45)
     }
 
     private func openPrivacySettings() {
@@ -393,6 +416,8 @@ private struct AppRowView: View {
     @State private var showEQ = false
     @State private var showingAudioUnits = false
     @State private var audioUnits: [AudioUnitInfo] = []
+    @State private var hovering = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         HStack(spacing: 10) {
@@ -437,9 +462,10 @@ private struct AppRowView: View {
                     } label: {
                         Image(systemName: app.muted ? "speaker.slash.fill" : "speaker.wave.2.fill")
                             .font(.system(size: 10))
-                            .frame(width: 14)
+                            .frame(width: 18, height: 18)
+                            .hoverHighlight()
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(PressableStyle())
                     .foregroundStyle(app.muted ? .red : .secondary)
                     .help(app.muted ? "Unmute \(app.name)" : "Mute \(app.name)")
                     .accessibilityLabel(app.muted ? "Unmute \(app.name)" : "Mute \(app.name)")
@@ -460,7 +486,8 @@ private struct AppRowView: View {
                         Text("\(Int(app.boost.rounded()))×")
                             .font(.system(size: 10, weight: .semibold))
                             .foregroundStyle(app.boost > 1 ? .orange : .secondary)
-                            .frame(width: 18)
+                            .frame(width: 20, height: 18)
+                            .hoverHighlight()
                     }
                     .menuStyle(.borderlessButton)
                     .menuIndicator(.hidden)
@@ -473,9 +500,10 @@ private struct AppRowView: View {
                     } label: {
                         Image(systemName: "slider.vertical.3")
                             .font(.system(size: 10))
-                            .frame(width: 14)
+                            .frame(width: 18, height: 18)
+                            .hoverHighlight()
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(PressableStyle())
                     .foregroundStyle(app.eq.isActive ? Color.accentColor : .secondary)
                     .help("Equalizer for \(app.name)")
                     .accessibilityLabel("Equalizer for \(app.name)")
@@ -516,7 +544,8 @@ private struct AppRowView: View {
                         Image(systemName: "hifispeaker")
                             .font(.system(size: 10))
                             .foregroundStyle(app.routeUID == nil ? .secondary : Color.accentColor)
-                            .frame(width: 14)
+                            .frame(width: 18, height: 18)
+                            .hoverHighlight()
                     }
                     .menuStyle(.borderlessButton)
                     .menuIndicator(.hidden)
@@ -542,12 +571,23 @@ private struct AppRowView: View {
             }
         }
         .padding(.horizontal, 8)
-        .padding(.vertical, 6)
+        .padding(.vertical, 7)
         .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(Color.primary.opacity(app.isPlaying ? 0.065 : 0.03))
+            RoundedRectangle(cornerRadius: Design.rowRadius, style: .continuous)
+                .fill(Color.primary.opacity(rowFill))
         )
-        .opacity(app.isPlaying || app.pinned ? 1 : 0.6)
+        .overlay(
+            RoundedRectangle(cornerRadius: Design.rowRadius, style: .continuous)
+                .strokeBorder(
+                    Color.primary.opacity(app.isPlaying ? 0.07 : 0.04),
+                    lineWidth: 0.5
+                )
+        )
+        .opacity(app.isPlaying || app.pinned || hovering ? 1 : 0.62)
+        .contentShape(RoundedRectangle(cornerRadius: Design.rowRadius, style: .continuous))
+        .onHover { hovering = $0 }
+        .animation(reduceMotion ? nil : .easeOut(duration: Design.hoverDuration), value: hovering)
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.18), value: app.isPlaying)
         .contextMenu {
             Button(app.pinned ? "Unpin" : "Pin to Top") {
                 engine.setPinned(app.bundleID, !app.pinned, name: app.name)
@@ -594,6 +634,13 @@ private struct AppRowView: View {
             alert.informativeText = "Start playback in the app first."
             alert.runModal()
         }
+    }
+
+    private var rowFill: Double {
+        if hovering {
+            return 0.1
+        }
+        return app.isPlaying ? 0.065 : 0.03
     }
 
     private var icon: some View {

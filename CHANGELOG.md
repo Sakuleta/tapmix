@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- The menu bar panel is translucent glass: the system material shows through,
+  the output device floats on a Liquid Glass card on macOS 26, and the volume
+  HUD uses the same treatment
+- Rows and controls answer the pointer with a short hover highlight and a press
+  scale; both respect Reduce Motion
+- Tighter panel height, softer row borders and a real empty state for a search
+  with no matches
+
 ## 0.2.3 — 2026-10-27
 
 - Call ducking only triggers for conferencing apps and browsers; recorders
