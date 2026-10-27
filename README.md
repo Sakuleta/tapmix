@@ -6,9 +6,9 @@ no kernel extension, no virtual audio driver, and no proprietary code.
 
 [github.com/Sakuleta/tapmix](https://github.com/Sakuleta/tapmix) · MIT licensed
 
-![CI](https://github.com/Sakuleta/tapmix/actions/workflows/ci.yml/badge.svg) ![status](https://img.shields.io/badge/status-v0.2-orange) ![license](https://img.shields.io/badge/license-MIT-blue)
+![CI](https://github.com/Sakuleta/tapmix/actions/workflows/ci.yml/badge.svg) ![status](https://img.shields.io/badge/status-v0.3-orange) ![license](https://img.shields.io/badge/license-MIT-blue)
 
-## Features (v0.1)
+## Features
 
 - **Per-app volume** from 0% to 200% (100% is unity gain)
 - **Per-app boost** from 1x to 4x, protected by a 5 ms lookahead limiter
@@ -46,9 +46,6 @@ no kernel extension, no virtual audio driver, and no proprietary code.
   (Chrome, Electron, Safari WebContent, …)
 - **Menu bar only** — no Dock icon, no background agents
 
-Planned next: per-app output routing, 10-band EQ, boost presets, hotkeys,
-pinned apps, and a volume HUD. See [Roadmap](#roadmap).
-
 ## Build and run
 
 Requirements: macOS 15+ (tested on macOS 27), Xcode command line tools.
@@ -59,7 +56,8 @@ open build/Tapmix.app
 ```
 
 The script builds with SwiftPM, wraps the binary in a minimal `.app` bundle with
-`Info.plist`, and ad-hoc signs it. Click the waveform icon in the menu bar.
+`Info.plist`, and signs it with the best available identity (`Tapmix Dev`, then
+Apple Development, then ad-hoc). Click the waveform icon in the menu bar.
 
 For development:
 
@@ -251,11 +249,6 @@ QuickTime, Voice Memos, virtual audio drivers) do not start ducking, so music
 keeps its level while they run. Turn the feature off from the
 speaker-with-one-wave menu in the panel footer.
 
-### Manual test checklist
-
-Hardware-dependent checks (routing, Bluetooth, calls, sleep/wake, long runs) are
-listed in [docs/manual-test.md](docs/manual-test.md).
-
 ### Troubleshooting
 
 - **No apps listed:** start playback in the app and check the menu bar icon;
@@ -292,9 +285,11 @@ For every process that is producing audio:
 `TapRender` is a small, allocation-free, frame-major buffer routine with
 mono/stereo conversion and one gain ramp per frame, so planar outputs stay
 balanced. `EQProcessor` adds ten peaking filters per channel before the limiter;
-coefficients are rebuilt on the main thread and handed to the callback. Both
-paths are covered by unit tests, including channel mapping, clamping, mute ramps
-and a +6 dB center-frequency check.
+coefficient banks are rebuilt on the main thread and published to the callback,
+which reads them in place. Both paths are covered by unit tests, including
+channel mapping, clamping, mute ramps and a +6 dB center-frequency check.
+`TapPlan` decides which processes become taps, so the engine never mixes that
+policy into its polling.
 
 ```
 Sources/
@@ -303,13 +298,25 @@ Sources/
     AudioCatalog.swift             # Pure grouping: processes → rows
     AppResolver.swift              # Pure helper-process → host-app resolution
     RunningAppDescriptor.swift     # Value snapshot of NSRunningApplication
+    TapPlan.swift                  # Pure rule: which processes get taps, where
     TapManager.swift               # Tap lifecycle, per-tap health, retry backoff
     TapController.swift            # Tap + private aggregate + IO proc for one process
-    TapRender.swift                # Frame-major realtime renderer (unit tested)
-    AudioMath.swift                # Gain clamp and ramp coefficient
+    TapRender.swift                # Frame-major realtime renderer
+    EQProcessor.swift              # Ten bands + AutoEQ filters, published banks
+    NightModeProcessor.swift       # Stereo-linked leveler before the limiter
+    LookaheadLimiter.swift         # 5 ms lookahead limiter
+    AudioUnitHost.swift            # AUv2 effect inside the tap callback
+    TapRecorder.swift              # Realtime ring buffer → 16-bit WAV
+    DuckingPolicy.swift            # Call-app input hysteresis
+    DevicePriority.swift           # Preferred output on reconnect
     AudioEngine.swift              # Polling, UI state, user actions
     Models.swift                   # AppRow, AppLevel, LevelStore
   Tapmix/                         # SwiftUI menu bar app
+    PanelView.swift                # Shell: header, output card, list, footer
+    AppRowView.swift               # One app row and its meter
+    EQPanel.swift                  # EQ popover and response curve
+    VolumeSlider.swift             # Slim slider for the glass panel
+    DesignSystem.swift             # Glass surface, cards, hover/press feedback
 Tests/TapmixTests/
 ```
 
@@ -328,7 +335,7 @@ Tests/TapmixTests/
   while the new tap starts on the target device.
 - **HAL listeners plus a safety poll.** Device, default-output and process
   changes arrive immediately; a one-second timer remains for ducking and as a
-  fallback, and meters update at 10 Hz.
+  fallback. Meters update at 10 Hz while the panel is open.
 - **Call detection is call-app based.** Recorders that hold the microphone do
   not duck the mix, and a browser-based call exempts the whole browser.
 - **Device priority reacts to connections only.** It does not fight a manual
@@ -380,9 +387,9 @@ build installed in `/Applications`.
 
 ## Roadmap
 
-- Notarized releases for every change set
-- Manual hardware test pass on multi-device, Bluetooth and call setups
-  (`docs/manual-test.md`)
+- Manual hardware pass on multi-device, Bluetooth and call setups
+- Automated release on tag from CI
+- Localization (the interface is English only)
 
 ## Credits
 

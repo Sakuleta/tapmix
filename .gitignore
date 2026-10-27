@@ -5,3 +5,6 @@ build/
 .swiftpm/
 
 dist/
+plans/
+.codex/
+.cursor/

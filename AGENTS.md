@@ -61,8 +61,3 @@ other taps keep running.
 Swift 5 language mode, SwiftPM, one type per file, no new dependencies, no
 private APIs. `XCTest` with `@testable import TapmixCore`. Match the existing
 small interfaces; do not add protocols unless a second adapter exists.
-
-## Plans
-Read `plans/README.md` first. Executors update their status row. The plans
-predate git initialization, so they use the SHA-256 baseline from the initial
-commit; future plans can use commits.
