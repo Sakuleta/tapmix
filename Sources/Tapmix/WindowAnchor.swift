@@ -3,18 +3,26 @@ import SwiftUI
 
 /// Keeps the panel attached to the menu bar.
 ///
-/// `MenuBarExtra` places its window a few points below the bar and can keep a
-/// stale origin after the panel changed height while it was closed — the panel
-/// then opens detached, one menu-bar height lower. Pinning the top edge to the
-/// visible frame whenever the window appears or resizes fixes both cases.
+/// `MenuBarExtra` places its window just under the bar, but can keep a stale
+/// frame when the panel's height changed while it was closed: the panel then
+/// opens detached, one menu-bar height lower, with square corners because the
+/// content is drawn smaller than the window. This view enforces the size the
+/// SwiftUI root asks for and pins the top edge to the visible frame on every
+/// show or resize.
 struct MenuBarAnchor: NSViewRepresentable {
+    let size: CGSize
+
     func makeNSView(context: Context) -> NSView { AnchorView() }
 
     func updateNSView(_ view: NSView, context: Context) {
-        (view as? AnchorView)?.pin()
+        guard let anchor = view as? AnchorView else { return }
+        anchor.target = size
+        anchor.pin()
     }
 
     final class AnchorView: NSView {
+        var target: CGSize = .zero
+
         override func viewDidMoveToWindow() {
             super.viewDidMoveToWindow()
             pin()
@@ -22,8 +30,8 @@ struct MenuBarAnchor: NSViewRepresentable {
             for name in [
                 NSWindow.didUpdateNotification,
                 NSWindow.didBecomeKeyNotification,
-                NSWindow.didChangeScreenNotification,
-                NSWindow.didResizeNotification
+                NSWindow.didResizeNotification,
+                NSWindow.didChangeScreenNotification
             ] {
                 NotificationCenter.default.addObserver(
                     self,
@@ -40,6 +48,14 @@ struct MenuBarAnchor: NSViewRepresentable {
 
         @objc func pin() {
             guard let window, let screen = window.screen ?? NSScreen.main else { return }
+
+            if target.width > 0, target.height > 0 {
+                let current = window.contentView?.bounds.size ?? .zero
+                if abs(current.height - target.height) > 2 || abs(current.width - target.width) > 2 {
+                    window.setContentSize(target)
+                }
+            }
+
             let top = screen.visibleFrame.maxY
             var frame = window.frame
             guard abs(frame.maxY - top) > 0.5 else { return }
