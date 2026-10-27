@@ -28,6 +28,7 @@ no kernel extension, no virtual audio driver, and no proprietary code.
 - **AutoEQ import** — load a `ParametricEQ.txt` headphone correction per app
 - **URL automation** — control volume, mute, boost and routing from Shortcuts,
   Raycast or shell scripts
+- **Per-app balance and mono downmix** — shift left/right or fold to one channel
 - **Pinned apps** stay visible while idle; **hide** an app to remove it from
   Tapmix entirely; **search** filters the list
 - **Output volume and mute** for the current default output device
@@ -141,6 +142,12 @@ In an app's sound popover choose **Import AutoEQ…** and pick a
 and `HSC` filters are applied on top of the 10 bands, stored per app, and kept
 even when the 10-band switch is off. **Clear** removes the import. The file's
 `Preamp` line is ignored; the limiter provides the headroom.
+
+### Balance and mono
+
+The same sound popover has an L/R balance slider and a **Mono** switch. Mono
+folds both channels together, which keeps a podcast audible in one earbud;
+balance is applied after the fold.
 
 ### Night mode
 

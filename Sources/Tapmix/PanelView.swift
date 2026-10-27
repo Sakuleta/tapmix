@@ -400,6 +400,8 @@ private struct AppRowView: View {
                             bundleID: app.bundleID,
                             initial: app.eq,
                             initialNightMode: app.nightMode,
+                            initialBalance: app.balance,
+                            initialMono: app.mono,
                             engine: engine
                         )
                     }
@@ -513,13 +515,24 @@ private struct EQPanel: View {
     @ObservedObject var engine: AudioEngine
     @State private var settings: EQSettings
     @State private var nightMode: Bool
+    @State private var balance: Float
+    @State private var mono: Bool
     @State private var importing = false
 
-    init(bundleID: String, initial: EQSettings, initialNightMode: Bool, engine: AudioEngine) {
+    init(
+        bundleID: String,
+        initial: EQSettings,
+        initialNightMode: Bool,
+        initialBalance: Float,
+        initialMono: Bool,
+        engine: AudioEngine
+    ) {
         self.bundleID = bundleID
         self.engine = engine
         _settings = State(initialValue: initial)
         _nightMode = State(initialValue: initialNightMode)
+        _balance = State(initialValue: initialBalance)
+        _mono = State(initialValue: initialMono)
     }
 
     var body: some View {
@@ -549,16 +562,47 @@ private struct EQPanel: View {
                 .fixedSize()
             }
 
-            Toggle("Night mode", isOn: Binding(
-                get: { nightMode },
-                set: { enabled in
-                    nightMode = enabled
-                    engine.setNightMode(bundleID, enabled)
-                }
-            ))
+            HStack {
+                Toggle("Night mode", isOn: Binding(
+                    get: { nightMode },
+                    set: { enabled in
+                        nightMode = enabled
+                        engine.setNightMode(bundleID, enabled)
+                    }
+                ))
+                .help("Lift quiet dialogue and tame loud peaks for late-night listening")
+
+                Spacer()
+
+                Toggle("Mono", isOn: Binding(
+                    get: { mono },
+                    set: { enabled in
+                        mono = enabled
+                        engine.setMono(bundleID, enabled)
+                    }
+                ))
+                .help("Downmix both channels for a single earbud")
+            }
             .toggleStyle(.switch)
             .controlSize(.mini)
-            .help("Lift quiet dialogue and tame loud peaks for late-night listening")
+
+            HStack(spacing: 6) {
+                Text("L")
+                    .font(.system(size: 9, design: .monospaced))
+                    .foregroundStyle(.secondary)
+                Slider(value: Binding(
+                    get: { Double(balance) },
+                    set: { value in
+                        balance = Float(value)
+                        engine.setBalance(bundleID, balance)
+                    }
+                ), in: -1 ... 1)
+                .controlSize(.mini)
+                .accessibilityLabel("Balance for \(bundleID)")
+                Text("R")
+                    .font(.system(size: 9, design: .monospaced))
+                    .foregroundStyle(.secondary)
+            }
 
             HStack(spacing: 6) {
                 if settings.filters.isEmpty {

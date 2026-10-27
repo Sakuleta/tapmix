@@ -57,6 +57,8 @@ final class TapRenderTests: XCTestCase {
         plan: TapRenderPlan,
         targetGain: Float,
         coefficient: Float,
+        balance: Float = 0,
+        mono: Bool = false,
         gain: inout Float
     ) {
         TapRender.render(
@@ -65,7 +67,9 @@ final class TapRenderTests: XCTestCase {
             plan: plan,
             targetGain: targetGain,
             currentGain: &gain,
-            rampCoefficient: coefficient
+            rampCoefficient: coefficient,
+            balance: balance,
+            mono: mono
         )
     }
 
@@ -154,6 +158,64 @@ final class TapRenderTests: XCTestCase {
         XCTAssertEqual(right[1], 0.75, accuracy: 0.0001)
         XCTAssertEqual(right[0] / left[0], 2, accuracy: 0.0001)
         XCTAssertEqual(gain, 1.5, accuracy: 0.0001)
+    }
+
+    func testBalanceAttenuatesOneSide() {
+        let input = TestBufferList(channels: [2], frames: 1)
+        let output = TestBufferList(channels: [2], frames: 1)
+        input.write([0.8, 0.4], at: 0)
+        var gain: Float = 0
+
+        render(
+            input: input,
+            output: output,
+            plan: TapRenderPlan(tapInputIndex: 0, tapInputChannels: 2),
+            targetGain: 1,
+            coefficient: 1,
+            balance: -1,
+            gain: &gain
+        )
+
+        XCTAssertEqual(output.read(at: 0), [0.8, 0])
+    }
+
+    func testMonoDownmix() {
+        let input = TestBufferList(channels: [2], frames: 1)
+        let output = TestBufferList(channels: [2], frames: 1)
+        input.write([0.8, 0.4], at: 0)
+        var gain: Float = 0
+
+        render(
+            input: input,
+            output: output,
+            plan: TapRenderPlan(tapInputIndex: 0, tapInputChannels: 2),
+            targetGain: 1,
+            coefficient: 1,
+            mono: true,
+            gain: &gain
+        )
+
+        XCTAssertEqual(output.read(at: 0), [0.6, 0.6])
+    }
+
+    func testMonoThenBalance() {
+        let input = TestBufferList(channels: [2], frames: 1)
+        let output = TestBufferList(channels: [2], frames: 1)
+        input.write([0.8, 0.4], at: 0)
+        var gain: Float = 0
+
+        render(
+            input: input,
+            output: output,
+            plan: TapRenderPlan(tapInputIndex: 0, tapInputChannels: 2),
+            targetGain: 1,
+            coefficient: 1,
+            balance: 0.5,
+            mono: true,
+            gain: &gain
+        )
+
+        XCTAssertEqual(output.read(at: 0), [0.3, 0.6])
     }
 
     func testRenderMuteWritesSilence() {

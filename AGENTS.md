@@ -18,7 +18,7 @@ taps. No kernel extension, no virtual audio driver, no third-party dependencies.
 - `RunningAppDescriptor` — the only place that reads `NSRunningApplication`.
 - `TapManager` — tap lifecycle, per-tap health, backoff, crossfaded routes.
 - `TapController` — one tap + one private aggregate + one IO proc.
-- `TapRender` — frame-major buffer copy/gain; the realtime seam.
+- `TapRender` — frame-major gain, EQ, night mode, balance/mono and limiter.
 - `EQProcessor` — ten peaking biquads per channel, coefficients built off-thread.
 - `NightModeProcessor` — stereo-linked leveler before the limiter.
 - `EQSettings` — per-app bands, AutoEQ filters and presets; persisted in `AppLevel`.

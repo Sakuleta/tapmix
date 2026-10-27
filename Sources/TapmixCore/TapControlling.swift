@@ -11,6 +11,8 @@ protocol TapControlling: AnyObject {
     func setGain(_ gain: Float)
     func setEQ(_ settings: EQSettings)
     func setNightMode(_ enabled: Bool)
+    func setBalance(_ balance: Float)
+    func setMono(_ enabled: Bool)
     /// Returns the peak since the previous call and resets it.
     func takePeakLevel() -> Float
 }

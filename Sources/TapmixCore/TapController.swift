@@ -47,6 +47,8 @@ final class TapController: TapControlling {
     private var pendingEQ = EQSettings()
     private var nightModeProcessor: NightModeProcessor?
     private var pendingNightMode = false
+    private var balance: Float = 0
+    private var mono = false
 
     // Realtime gain state. Aligned Float reads/writes are atomic on Apple silicon.
     private var targetGain: Float = 1
@@ -74,6 +76,14 @@ final class TapController: TapControlling {
     func setNightMode(_ enabled: Bool) {
         pendingNightMode = enabled
         nightModeProcessor?.setEnabled(enabled)
+    }
+
+    func setBalance(_ balance: Float) {
+        self.balance = min(max(balance, -1), 1)
+    }
+
+    func setMono(_ enabled: Bool) {
+        mono = enabled
     }
 
     func takePeakLevel() -> Float {
@@ -231,6 +241,8 @@ final class TapController: TapControlling {
             rampCoefficient: ramp,
             eq: eqProcessor,
             nightMode: nightModeProcessor,
+            balance: balance,
+            mono: mono,
             limiter: limiter
         )
         peakLevel = max(peakLevel, peak)
