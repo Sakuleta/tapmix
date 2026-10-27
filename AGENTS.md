@@ -40,7 +40,8 @@ taps. No kernel extension, no virtual audio driver, no third-party dependencies.
 - `SceneStore`/`MixScene` — named snapshots of per-app levels.
 - `TapmixURLCommand`/`URLCommandRouter` — `tapmix://` automation.
 - `DesignSystem` — glass panel surface, cards, hover/press feedback.
-- `PanelView`/`TapmixApp` — SwiftUI menu bar.
+- `PanelView`/`AppRowView`/`EQPanel`/`Pickers` — SwiftUI panel, one surface per file.
+- `TapmixApp` — scene and app delegate.
 
 ## Realtime invariants
 `TapController.render` and `TapRender` must not allocate, lock, log, message
