@@ -157,6 +157,17 @@ final class TapManager {
         health = .ok
     }
 
+    /// Blocking fade used only while quitting; 80 ms lets the 20 ms gain ramp settle.
+    func fadeOutAndStop() {
+        for tap in taps.values {
+            tap.setGain(0)
+        }
+        if !taps.isEmpty {
+            Thread.sleep(forTimeInterval: 0.08)
+        }
+        stopAll()
+    }
+
     private func retire(_ tap: any TapControlling) {
         retiring.append(tap)
         let token = ObjectIdentifier(tap)
