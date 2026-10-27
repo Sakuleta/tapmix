@@ -113,7 +113,9 @@ build; do not disable SIP or modify system security settings.
 - `⌥⌘M` — mute or unmute that app.
 - A small HUD appears near the top of the screen with the app name and level.
 
-Hotkeys are fixed for now; they need no Accessibility permission.
+Choose the modifier set from the keyboard menu in the footer: `⌥⌘`
+(default), `⌃⌥`, `⇧⌘` or **Off**. The choice is remembered. Hotkeys need no
+Accessibility permission.
 
 ### AutoEQ
 

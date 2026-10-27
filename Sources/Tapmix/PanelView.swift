@@ -5,6 +5,7 @@ import UniformTypeIdentifiers
 
 struct PanelView: View {
     @ObservedObject var engine: AudioEngine
+    @ObservedObject private var hotkeys = HotKeyController.shared
     @State private var search = ""
 
     var body: some View {
@@ -235,6 +236,28 @@ struct PanelView: View {
                 .font(.system(size: 10))
                 .foregroundStyle(.tertiary)
             Spacer()
+            Menu {
+                ForEach(HotKeyModifiers.allCases) { option in
+                    Button {
+                        hotkeys.setModifiers(option)
+                    } label: {
+                        if hotkeys.modifiers == option {
+                            Label(option.label, systemImage: "checkmark")
+                        } else {
+                            Text(option.label)
+                        }
+                    }
+                }
+            } label: {
+                Image(systemName: "keyboard")
+                    .font(.system(size: 10))
+                    .foregroundStyle(hotkeys.modifiers == .off ? .tertiary : .secondary)
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .fixedSize()
+            .help("Global hotkey modifiers")
+            .accessibilityLabel("Hotkey modifiers")
             Menu {
                 Toggle("Duck other apps during calls", isOn: Binding(
                     get: { engine.duckingEnabled },
