@@ -97,6 +97,37 @@ final class TapManager {
         }
     }
 
+    func startRecording(bundleID: String, baseURL: URL) -> [URL] {
+        let matching = taps.values.filter { $0.bundleID == bundleID }
+        guard !matching.isEmpty else { return [] }
+
+        var urls: [URL] = []
+        for tap in matching {
+            let url: URL
+            if matching.count == 1 {
+                url = baseURL
+            } else {
+                let base = baseURL.deletingPathExtension()
+                url = base
+                    .appendingPathExtension(String(tap.processObjectID))
+                    .appendingPathExtension("wav")
+            }
+            do {
+                try tap.startRecording(to: url)
+                urls.append(url)
+            } catch {
+                continue
+            }
+        }
+        return urls
+    }
+
+    func stopRecording(bundleID: String) {
+        for tap in taps.values where tap.bundleID == bundleID {
+            tap.stopRecording()
+        }
+    }
+
     func peakLevel(for bundleID: String) -> Float {
         var peak: Float = 0
         for tap in taps.values where tap.bundleID == bundleID {

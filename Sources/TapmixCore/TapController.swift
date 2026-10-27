@@ -49,6 +49,8 @@ final class TapController: TapControlling {
     private var pendingNightMode = false
     private var balance: Float = 0
     private var mono = false
+    private var sampleRate: Double = 48_000
+    private var recorder: TapRecorder?
 
     // Realtime gain state. Aligned Float reads/writes are atomic on Apple silicon.
     private var targetGain: Float = 1
@@ -84,6 +86,16 @@ final class TapController: TapControlling {
 
     func setMono(_ enabled: Bool) {
         mono = enabled
+    }
+
+    func startRecording(to url: URL) throws {
+        let recorder = try TapRecorder(url: url, sampleRate: sampleRate)
+        self.recorder?.stop()
+        self.recorder = recorder
+    }
+
+    func stopRecording() {
+        recorder?.stop()
     }
 
     func takePeakLevel() -> Float {
@@ -147,6 +159,7 @@ final class TapController: TapControlling {
         }
 
         let sampleRate = nominalSampleRate(newAggregateID)
+        self.sampleRate = sampleRate
         ramp = AudioMath.rampCoefficient(sampleRate: sampleRate)
         limiter = LookaheadLimiter(sampleRate: sampleRate)
         let eq = EQProcessor(sampleRate: sampleRate)
@@ -192,6 +205,8 @@ final class TapController: TapControlling {
 
     func stop() {
         guard running || aggregateID != 0 || tapID != 0 else { return }
+        stopRecording()
+        recorder = nil
         running = false
 
         if aggregateID != 0, let ioProcID {

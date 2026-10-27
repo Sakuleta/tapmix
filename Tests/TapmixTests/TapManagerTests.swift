@@ -21,6 +21,8 @@ final class FakeTap: TapControlling {
     private(set) var nightMode = false
     private(set) var balance: Float = 0
     private(set) var mono = false
+    private(set) var recordingURLs: [URL] = []
+    private(set) var recordingStops = 0
 
     init(processObjectID: AudioObjectID, bundleID: String, createdAt: Date) {
         self.processObjectID = processObjectID
@@ -38,6 +40,10 @@ final class FakeTap: TapControlling {
     func setNightMode(_ enabled: Bool) { nightMode = enabled }
     func setBalance(_ value: Float) { balance = value }
     func setMono(_ enabled: Bool) { mono = enabled }
+    func startRecording(to url: URL) throws {
+        recordingURLs.append(url)
+    }
+    func stopRecording() { recordingStops += 1 }
     func takePeakLevel() -> Float {
         defer { peak = 0 }
         return peak
@@ -289,6 +295,21 @@ final class TapManagerTests: XCTestCase {
         XCTAssertEqual(created[0].gain, 0)
         XCTAssertEqual(created[0].stopCount, 1)
         XCTAssertEqual(manager.activeProcessIDs, [])
+    }
+
+    func testRecordingStartsAndStopsTaps() {
+        let a = desired(1, "com.a")
+        sync([a])
+
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("tapmix-test-\(UUID().uuidString).wav")
+        let urls = manager.startRecording(bundleID: "com.a", baseURL: url)
+
+        XCTAssertEqual(urls, [url])
+        XCTAssertEqual(created[0].recordingURLs, [url])
+
+        manager.stopRecording(bundleID: "com.a")
+        XCTAssertEqual(created[0].recordingStops, 1)
     }
 
     func testBalanceAndMonoPropagate() {

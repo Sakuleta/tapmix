@@ -17,6 +17,7 @@ public final class AudioEngine: ObservableObject {
     @Published public private(set) var isDucking = false
     @Published public private(set) var scenes: [MixScene] = []
     @Published public private(set) var eqPresets: [SavedEQPreset] = []
+    @Published public private(set) var recordingBundleIDs: Set<String> = []
     public private(set) var preferredOutputUID: String?
 
     /// Set by the panel while the output slider is being dragged so polling does not fight it.
@@ -215,6 +216,23 @@ public final class AudioEngine: ObservableObject {
 
     public func toggleOutputMute() {
         setOutputMuted(!outputMuted)
+    }
+
+    public func isRecording(_ bundleID: String) -> Bool {
+        recordingBundleIDs.contains(bundleID)
+    }
+
+    @discardableResult
+    public func startRecording(_ bundleID: String, to url: URL) -> Bool {
+        let urls = tapManager.startRecording(bundleID: bundleID, baseURL: url)
+        guard !urls.isEmpty else { return false }
+        recordingBundleIDs.insert(bundleID)
+        return true
+    }
+
+    public func stopRecording(_ bundleID: String) {
+        tapManager.stopRecording(bundleID: bundleID)
+        recordingBundleIDs.remove(bundleID)
     }
 
     public func saveEQPreset(_ name: String, for bundleID: String) {
