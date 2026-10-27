@@ -176,7 +176,9 @@ stereo WAV. **Stop recording** is in the same menu and a red dot marks the row.
 
 Apps with several audio processes get one file per process (`App-<id>.wav`).
 A route change replaces the tap and ends that app's recording; start it again
-after the switch.
+after the switch. A recording stops at 4 GB — about 6.2 hours of stereo at
+48 kHz — because the WAV header stores a 32-bit size; the file stays valid and
+closes cleanly, and a full disk ends the recording instead of the app.
 
 ### Audio Unit effects
 
