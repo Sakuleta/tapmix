@@ -9,19 +9,22 @@ public struct AppLevel: Codable, Equatable {
     public var eq: EQSettings
     /// Explicit output device; `nil` follows the system default.
     public var outputUID: String?
+    public var nightMode: Bool
 
     public init(
         volume: Float = 1,
         muted: Bool = false,
         boost: Float = 1,
         eq: EQSettings = EQSettings(),
-        outputUID: String? = nil
+        outputUID: String? = nil,
+        nightMode: Bool = false
     ) {
         self.volume = volume
         self.muted = muted
         self.boost = boost
         self.eq = eq
         self.outputUID = outputUID
+        self.nightMode = nightMode
     }
 
     public var gain: Float {
@@ -29,7 +32,7 @@ public struct AppLevel: Codable, Equatable {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case volume, muted, boost, eq, outputUID
+        case volume, muted, boost, eq, outputUID, nightMode
     }
 
     public init(from decoder: Decoder) throws {
@@ -39,6 +42,7 @@ public struct AppLevel: Codable, Equatable {
         boost = try container.decodeIfPresent(Float.self, forKey: .boost) ?? 1
         eq = try container.decodeIfPresent(EQSettings.self, forKey: .eq) ?? EQSettings()
         outputUID = try container.decodeIfPresent(String.self, forKey: .outputUID)
+        nightMode = try container.decodeIfPresent(Bool.self, forKey: .nightMode) ?? false
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -48,6 +52,7 @@ public struct AppLevel: Codable, Equatable {
         try container.encode(boost, forKey: .boost)
         try container.encode(eq, forKey: .eq)
         try container.encodeIfPresent(outputUID, forKey: .outputUID)
+        try container.encode(nightMode, forKey: .nightMode)
     }
 }
 
@@ -102,6 +107,7 @@ public struct AppRow: Identifiable, Equatable {
     public var level: Float
     public var eq: EQSettings
     public var routeUID: String?
+    public var nightMode: Bool
 
     public init(
         bundleID: String,
@@ -114,7 +120,8 @@ public struct AppRow: Identifiable, Equatable {
         pinned: Bool = false,
         level: Float = 0,
         eq: EQSettings = EQSettings(),
-        routeUID: String? = nil
+        routeUID: String? = nil,
+        nightMode: Bool = false
     ) {
         self.bundleID = bundleID
         self.name = name
@@ -127,6 +134,7 @@ public struct AppRow: Identifiable, Equatable {
         self.level = level
         self.eq = eq
         self.routeUID = routeUID
+        self.nightMode = nightMode
     }
 }
 

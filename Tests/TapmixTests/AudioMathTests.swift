@@ -33,6 +33,7 @@ final class AudioMathTests: XCTestCase {
         XCTAssertEqual(level.boost, 1, accuracy: 0.0001)
         XCTAssertEqual(level.gain, 0.6, accuracy: 0.0001)
         XCTAssertFalse(level.eq.enabled)
+        XCTAssertFalse(level.nightMode)
         XCTAssertEqual(level.eq.gains, [Float](repeating: 0, count: 10))
     }
 

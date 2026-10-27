@@ -372,7 +372,12 @@ private struct AppRowView: View {
                     .help("Equalizer for \(app.name)")
                     .accessibilityLabel("Equalizer for \(app.name)")
                     .popover(isPresented: $showEQ, arrowEdge: .trailing) {
-                        EQPanel(bundleID: app.bundleID, initial: app.eq, engine: engine)
+                        EQPanel(
+                            bundleID: app.bundleID,
+                            initial: app.eq,
+                            initialNightMode: app.nightMode,
+                            engine: engine
+                        )
                     }
 
                     Menu {
@@ -483,11 +488,13 @@ private struct EQPanel: View {
     let bundleID: String
     @ObservedObject var engine: AudioEngine
     @State private var settings: EQSettings
+    @State private var nightMode: Bool
 
-    init(bundleID: String, initial: EQSettings, engine: AudioEngine) {
+    init(bundleID: String, initial: EQSettings, initialNightMode: Bool, engine: AudioEngine) {
         self.bundleID = bundleID
         self.engine = engine
         _settings = State(initialValue: initial)
+        _nightMode = State(initialValue: initialNightMode)
     }
 
     var body: some View {
@@ -516,6 +523,17 @@ private struct EQPanel: View {
                 .menuStyle(.borderlessButton)
                 .fixedSize()
             }
+
+            Toggle("Night mode", isOn: Binding(
+                get: { nightMode },
+                set: { enabled in
+                    nightMode = enabled
+                    engine.setNightMode(bundleID, enabled)
+                }
+            ))
+            .toggleStyle(.switch)
+            .controlSize(.mini)
+            .help("Lift quiet dialogue and tame loud peaks for late-night listening")
 
             ForEach(0 ..< EQSettings.bandCount, id: \.self) { index in
                 HStack(spacing: 6) {
