@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.2 — 2026-10-27
+
+- Audio Unit effects: host an installed AUv2 effect per app from a searchable sheet
+- Sparkle auto-update with an EdDSA-signed appcast on GitHub Pages
+- Local AutoEQ folder catalog with search
+- WAV recording now writes frames; it previously produced an empty file
+- Homebrew cask pinned to the notarized release
+
 ## 0.2.1 — 2026-10-27
 
 - EQ response curve above the bands, including imported AutoEQ filters

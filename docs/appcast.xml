@@ -5,5 +5,15 @@
         <link>https://github.com/Sakuleta/tapmix</link>
         <description>Tapmix release feed</description>
         <language>en</language>
+        <item>
+            <title>0.2.2</title>
+            <pubDate>Tue, 27 Oct 2026 17:50:49 +0300</pubDate>
+            <link>https://github.com/Sakuleta/tapmix</link>
+            <sparkle:version>4</sparkle:version>
+            <sparkle:shortVersionString>0.2.2</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
+            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
+            <enclosure url="https://github.com/Sakuleta/tapmix/releases/download/v0.2.2/Tapmix-0.2.2.zip" length="2607676" type="application/octet-stream" sparkle:edSignature="p2uOl5BNnmeXngYMqSpzwNtUw4c3zuU8YIbEbqmXsdVj4UkOZsjwFWsVi4k18vTnzwM/SbJUuaGAJyCxhckIBQ=="/>
+        </item>
     </channel>
 </rss>

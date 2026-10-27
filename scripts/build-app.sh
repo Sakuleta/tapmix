@@ -46,7 +46,7 @@ fi
 
 # Inside-out: Sparkle's helpers, then the framework, then the app.
 SPARKLE_DIR="$APP/Contents/Frameworks/Sparkle.framework/Versions/B"
-for item in "$SPARKLE_DIR/Autoupdate.app" "$SPARKLE_DIR/Updater.app" "$SPARKLE_DIR/XPCServices/"*.xpc; do
+for item in "$SPARKLE_DIR/Autoupdate" "$SPARKLE_DIR/Autoupdate.app" "$SPARKLE_DIR/Updater.app" "$SPARKLE_DIR/XPCServices/"*.xpc; do
     [[ -e "$item" ]] && codesign "${SIGN[@]}" "$item"
 done
 codesign "${SIGN[@]}" "$APP/Contents/Frameworks/Sparkle.framework"
