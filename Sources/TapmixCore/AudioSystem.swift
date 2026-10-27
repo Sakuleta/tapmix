@@ -1,4 +1,5 @@
 import CoreAudio
+import Darwin
 import Foundation
 
 public struct AudioProcess: Hashable {
@@ -6,12 +7,22 @@ public struct AudioProcess: Hashable {
     public let pid: pid_t
     public let bundleID: String
     public let isPlaying: Bool
+    /// Filled from `proc_pidpath`; audio helpers are often not registered apps,
+    /// so this is the only way to find their host bundle.
+    public let executablePath: String?
 
-    public init(objectID: AudioObjectID, pid: pid_t, bundleID: String, isPlaying: Bool) {
+    public init(
+        objectID: AudioObjectID,
+        pid: pid_t,
+        bundleID: String,
+        isPlaying: Bool,
+        executablePath: String? = nil
+    ) {
         self.objectID = objectID
         self.pid = pid
         self.bundleID = bundleID
         self.isPlaying = isPlaying
+        self.executablePath = executablePath
     }
 }
 
@@ -31,13 +42,21 @@ enum AudioSystem {
                   let running: UInt32 = readUInt32(objectID, kAudioProcessPropertyIsRunningOutput)
             else { return nil }
 
+            let processID = pid_t(pid)
             return AudioProcess(
                 objectID: objectID,
-                pid: pid_t(pid),
+                pid: processID,
                 bundleID: bundleID,
-                isPlaying: running != 0
+                isPlaying: running != 0,
+                executablePath: executablePath(processID)
             )
         }
+    }
+
+    private static func executablePath(_ pid: pid_t) -> String? {
+        var buffer = [CChar](repeating: 0, count: 4096)
+        guard proc_pidpath(pid, &buffer, UInt32(buffer.count)) > 0 else { return nil }
+        return String(cString: buffer)
     }
 
     // MARK: - Output device

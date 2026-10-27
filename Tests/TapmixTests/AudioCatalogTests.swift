@@ -52,9 +52,16 @@ final class AudioCatalogTests: XCTestCase {
         _ objectID: AudioObjectID,
         pid: pid_t = 10,
         bundleID: String = "com.brave.Browser.helper",
-        playing: Bool = true
+        playing: Bool = true,
+        executablePath: String? = nil
     ) -> AudioProcess {
-        AudioProcess(objectID: objectID, pid: pid, bundleID: bundleID, isPlaying: playing)
+        AudioProcess(
+            objectID: objectID,
+            pid: pid,
+            bundleID: bundleID,
+            isPlaying: playing,
+            executablePath: executablePath
+        )
     }
 
     private func groups(
@@ -77,6 +84,21 @@ final class AudioCatalogTests: XCTestCase {
         XCTAssertEqual(result.count, 1)
         XCTAssertEqual(result.first?.bundleID, "com.brave.Browser")
         XCTAssertEqual(result.first?.name, "Brave Browser")
+        XCTAssertEqual(result.first?.playingProcessObjectIDs, [1])
+    }
+
+    func testUnregisteredHelperMapsByProcessPath() {
+        // The audio helper is not in NSWorkspace.runningApplications, so only
+        // proc_pidpath can reveal that it lives inside the host bundle.
+        let helper = process(
+            1,
+            pid: 10,
+            executablePath: "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper"
+        )
+        let result = groups(processes: [helper], running: [braveHost])
+
+        XCTAssertEqual(result.count, 1)
+        XCTAssertEqual(result.first?.bundleID, "com.brave.Browser")
         XCTAssertEqual(result.first?.playingProcessObjectIDs, [1])
     }
 
