@@ -21,7 +21,8 @@ taps. No kernel extension, no virtual audio driver, no third-party dependencies.
 - `TapRender` — frame-major gain, EQ, night mode, balance/mono and limiter.
 - `EQProcessor` — ten peaking biquads per channel, coefficients built off-thread.
 - `NightModeProcessor` — stereo-linked leveler before the limiter.
-- `EQSettings` — per-app bands, AutoEQ filters and presets; persisted in `AppLevel`.
+- `EQSettings` — per-app bands and AutoEQ filters; persisted in `AppLevel`.
+- `EQPresetStore`/`SavedEQPreset` — user EQ presets shared across apps.
 - `EQFilterParser` — reads AutoEQ/Equalizer APO `ParametricEQ.txt` files.
 - `AudioEngine` — 1s poll, UI state, user actions, hotkey target.
 - `DuckingPolicy` — microphone-activity hysteresis; never reads audio.

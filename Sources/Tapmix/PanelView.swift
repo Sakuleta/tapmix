@@ -560,6 +560,8 @@ private struct EQPanel: View {
     @State private var balance: Float
     @State private var mono: Bool
     @State private var importing = false
+    @State private var presetName = ""
+    @State private var showingSavePreset = false
 
     init(
         bundleID: String,
@@ -597,6 +599,29 @@ private struct EQPanel: View {
                         Button(preset.rawValue) {
                             settings = preset.settings
                             apply()
+                        }
+                    }
+                    if !engine.eqPresets.isEmpty {
+                        Divider()
+                        ForEach(engine.eqPresets) { preset in
+                            Button(preset.name) {
+                                settings = preset.settings
+                                apply()
+                            }
+                        }
+                    }
+                    Divider()
+                    Button("Save preset…") {
+                        presetName = "Preset \(engine.eqPresets.count + 1)"
+                        showingSavePreset = true
+                    }
+                    if !engine.eqPresets.isEmpty {
+                        Menu("Delete preset") {
+                            ForEach(engine.eqPresets) { preset in
+                                Button(preset.name) {
+                                    engine.deleteEQPreset(preset.id)
+                                }
+                            }
                         }
                     }
                 }
@@ -702,6 +727,15 @@ private struct EQPanel: View {
         }
         .padding(12)
         .frame(width: 300)
+        .alert("Save EQ preset", isPresented: $showingSavePreset) {
+            TextField("Name", text: $presetName)
+            Button("Save") {
+                engine.saveEQPreset(presetName, for: bundleID)
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Saves the current bands and AutoEQ filters.")
+        }
         .fileImporter(
             isPresented: $importing,
             allowedContentTypes: [UTType.plainText, UTType.data],
