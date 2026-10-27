@@ -12,7 +12,7 @@ taps. No kernel extension, no virtual audio driver, no third-party dependencies.
 - `open` the `.app` bundle; launching the raw binary breaks TCC attribution.
 
 ## Architecture
-- `AudioSystem` — HAL property wrappers (processes, device volume/mute).
+- `AudioSystem` — HAL property wrappers and property listeners.
 - `AudioCatalog` — pure snapshot → rows + per-bundle processes.
 - `AppResolver` — pure helper-process → host-app resolution.
 - `RunningAppDescriptor` — the only place that reads `NSRunningApplication`.

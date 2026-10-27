@@ -34,6 +34,8 @@ public final class AudioEngine: ObservableObject {
     private static let duckingKey = "com.mardinli.tapmix.duckingEnabled"
     private static let preferredOutputKey = "com.mardinli.tapmix.preferredOutputUID"
     private var knownOutputUIDs: Set<String> = []
+    private var systemListeners: [AudioSystem.PropertyListener] = []
+    private var processListeners: [AudioObjectID: AudioSystem.PropertyListener] = [:]
 
     init(store: LevelStore = LevelStore(), preferences: AppPreferences = AppPreferences()) {
         self.store = store
@@ -65,6 +67,8 @@ public final class AudioEngine: ObservableObject {
         }
         RunLoop.main.add(meterTimer, forMode: .common)
         self.meterTimer = meterTimer
+
+        installListeners()
     }
 
     public func shutdown() {
@@ -73,6 +77,7 @@ public final class AudioEngine: ObservableObject {
         timer = nil
         meterTimer?.invalidate()
         meterTimer = nil
+        removeListeners()
         tapManager.stopAll()
     }
 
@@ -240,6 +245,56 @@ public final class AudioEngine: ObservableObject {
 
     // MARK: - Polling
 
+    private func installListeners() {
+        let systemSelectors: [AudioObjectPropertySelector] = [
+            kAudioHardwarePropertyDefaultOutputDevice,
+            kAudioHardwarePropertyDevices,
+            kAudioHardwarePropertyProcessObjectList
+        ]
+        for selector in systemSelectors {
+            let listener = AudioSystem.addListener(AudioSystem.systemObject, selector) { [weak self] in
+                Task { @MainActor in self?.refreshNow() }
+            }
+            if let listener {
+                systemListeners.append(listener)
+            }
+        }
+    }
+
+    private func syncProcessListeners(_ processIDs: [AudioObjectID]) {
+        let alive = Set(processIDs)
+        for (id, listener) in Array(processListeners) where !alive.contains(id) {
+            AudioSystem.removeListener(listener)
+            processListeners[id] = nil
+        }
+        for id in processIDs where processListeners[id] == nil {
+            let listener = AudioSystem.addListener(id, kAudioProcessPropertyIsRunningOutput) { [weak self] in
+                Task { @MainActor in self?.refreshNow() }
+            }
+            if let listener {
+                processListeners[id] = listener
+            }
+        }
+    }
+
+    private func removeListeners() {
+        for listener in systemListeners {
+            AudioSystem.removeListener(listener)
+        }
+        systemListeners.removeAll()
+        for listener in processListeners.values {
+            AudioSystem.removeListener(listener)
+        }
+        processListeners.removeAll()
+    }
+
+    private func refreshNow() {
+        guard started else { return }
+        reloadOutput()
+        updateDucking()
+        refresh()
+    }
+
     private func tick() {
         guard started else { return }
         reloadOutput()
@@ -331,6 +386,7 @@ public final class AudioEngine: ObservableObject {
 
     private func refresh() {
         let processes = AudioSystem.processes()
+        syncProcessListeners(processes.map(\.objectID))
         let running = RunningAppDescriptor.snapshot(NSWorkspace.shared.runningApplications)
         let devices = AudioSystem.outputDevices()
         if devices != outputDevices {
