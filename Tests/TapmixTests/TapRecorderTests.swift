@@ -64,4 +64,38 @@ final class TapRecorderTests: XCTestCase {
         let data = try Data(contentsOf: url)
         XCTAssertEqual(data.count, 44 + frames * 4)
     }
+
+    func testStopsAtTheFrameCeiling() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("tapmix-recording-\(UUID().uuidString).wav")
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let recorder = try TapRecorder(url: url, sampleRate: 8_000, maxFrames: 1_000)
+        for _ in 0 ..< 2_000 {
+            recorder.write(left: 0.25, right: 0.25)
+        }
+        recorder.stop()
+
+        let data = try Data(contentsOf: url)
+        XCTAssertEqual(data.count, 44 + 1_000 * 4)
+
+        let dataSize: UInt32 = data.withUnsafeBytes {
+            $0.loadUnaligned(fromByteOffset: 40, as: UInt32.self)
+        }
+        XCTAssertEqual(dataSize, 1_000 * 4)
+    }
+
+    func testSecondStopIsANoOp() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("tapmix-recording-\(UUID().uuidString).wav")
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let recorder = try TapRecorder(url: url, sampleRate: 8_000)
+        recorder.write(left: 0.1, right: 0.1)
+        recorder.stop()
+        recorder.stop()
+
+        let data = try Data(contentsOf: url)
+        XCTAssertEqual(data.count, 44 + 4)
+    }
 }

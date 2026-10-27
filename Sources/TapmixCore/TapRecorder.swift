@@ -16,13 +16,22 @@ final class TapRecorder {
     private let writeIndex = Atomic<Int>(0)
     private let readIndex = Atomic<Int>(0)
     private let active = Atomic<Bool>(true)
+    private let maxFrames: UInt32
     private var timer: DispatchSourceTimer?
     private var framesWritten: UInt32 = 0
+    private var fileClosed = false
 
     var isActive: Bool { active.load(ordering: .acquiring) }
 
-    init(url: URL, sampleRate: Double) throws {
+    /// `maxFrames` is a test seam; the default keeps the 32-bit WAV data chunk
+    /// inside `UInt32` (about 6.2 hours of stereo at 48 kHz).
+    init(
+        url: URL,
+        sampleRate: Double,
+        maxFrames: UInt32 = UInt32.max / 4
+    ) throws {
         self.sampleRate = max(sampleRate, 8_000)
+        self.maxFrames = max(maxFrames, 1)
         capacityFrames = max(1_024, Int(self.sampleRate * 4))
         buffer = UnsafeMutablePointer<Float>.allocate(capacity: capacityFrames * 2)
         buffer.initialize(repeating: 0, count: capacityFrames * 2)
@@ -118,33 +127,63 @@ final class TapRecorder {
 
     func stop() {
         guard active.exchange(false, ordering: .acquiringAndReleasing) else { return }
-        timer?.cancel()
-        timer = nil
-        queue.sync { drain() }
-
-        let dataSize = framesWritten * 4
-        patchHeader(dataSize: dataSize)
-        try? fileHandle.close()
+        queue.sync {
+            timer?.cancel()
+            timer = nil
+            drain()
+            finish()
+        }
     }
 
     private func drain() {
+        guard !fileClosed else { return }
+
         var read = readIndex.load(ordering: .relaxed)
         let write = writeIndex.load(ordering: .acquiring)
         guard read != write else { return }
 
+        let remaining = framesWritten < maxFrames ? maxFrames - framesWritten : 0
+        guard remaining > 0 else {
+            finish()
+            return
+        }
+
         var data = Data()
         data.reserveCapacity(4_096)
+        var frames: UInt32 = 0
 
-        while read != write {
+        while read != write, frames < remaining {
             let base = read * 2
             append(buffer[base], to: &data)
             append(buffer[base + 1], to: &data)
             read = (read + 1) % capacityFrames
+            frames += 1
         }
         readIndex.store(read, ordering: .releasing)
 
-        fileHandle.write(data)
-        framesWritten += UInt32(data.count / 4)
+        do {
+            try fileHandle.write(contentsOf: data)
+        } catch {
+            // A full disk must not take the app down mid-recording.
+            finish()
+            return
+        }
+
+        framesWritten += frames
+        if framesWritten >= maxFrames {
+            finish()
+        }
+    }
+
+    /// Closes the file exactly once, from the recorder queue.
+    private func finish() {
+        guard !fileClosed else { return }
+        fileClosed = true
+        timer?.cancel()
+        timer = nil
+        active.store(false, ordering: .releasing)
+        patchHeader(dataSize: framesWritten * 4)
+        try? fileHandle.close()
     }
 
     @inline(__always)
