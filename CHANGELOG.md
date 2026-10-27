@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.4 — 2026-10-27
 
 - The menu bar panel is translucent glass: the system material shows through,
   the output device floats on a Liquid Glass card on macOS 26, and the volume
