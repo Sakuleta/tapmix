@@ -15,6 +15,7 @@ public final class AudioEngine: ObservableObject {
     @Published public private(set) var hiddenApps: [HiddenApp] = []
     @Published public private(set) var outputDevices: [AudioDevice] = []
     @Published public private(set) var isDucking = false
+    @Published public private(set) var scenes: [MixScene] = []
     public private(set) var preferredOutputUID: String?
 
     /// Set by the panel while the output slider is being dragged so polling does not fight it.
@@ -22,6 +23,7 @@ public final class AudioEngine: ObservableObject {
 
     private let store: LevelStore
     private let preferences: AppPreferences
+    private let sceneStore: SceneStore
     private let tapManager = TapManager()
     private var outputUID: String?
     private var outputDeviceID: AudioObjectID = 0
@@ -37,9 +39,15 @@ public final class AudioEngine: ObservableObject {
     private var systemListeners: [AudioSystem.PropertyListener] = []
     private var processListeners: [AudioObjectID: AudioSystem.PropertyListener] = [:]
 
-    init(store: LevelStore = LevelStore(), preferences: AppPreferences = AppPreferences()) {
+    init(
+        store: LevelStore = LevelStore(),
+        preferences: AppPreferences = AppPreferences(),
+        sceneStore: SceneStore = SceneStore()
+    ) {
         self.store = store
         self.preferences = preferences
+        self.sceneStore = sceneStore
+        scenes = sceneStore.scenes
         duckingEnabled = UserDefaults.standard.object(forKey: Self.duckingKey) as? Bool ?? true
         preferredOutputUID = UserDefaults.standard.string(forKey: Self.preferredOutputKey)
     }
@@ -202,6 +210,28 @@ public final class AudioEngine: ObservableObject {
 
     public func toggleOutputMute() {
         setOutputMuted(!outputMuted)
+    }
+
+    public func saveScene(named name: String) {
+        sceneStore.save(name: name, levels: store.allLevels)
+        scenes = sceneStore.scenes
+    }
+
+    public func applyScene(_ scene: MixScene) {
+        for (bundleID, level) in scene.levels {
+            store.set(level, for: bundleID)
+            tapManager.setGain(effectiveGain(level, bundleID: bundleID), for: bundleID)
+            tapManager.setEQ(level.eq, for: bundleID)
+            tapManager.setNightMode(level.nightMode, for: bundleID)
+            tapManager.setBalance(level.balance, for: bundleID)
+            tapManager.setMono(level.mono, for: bundleID)
+        }
+        refresh()
+    }
+
+    public func deleteScene(_ id: UUID) {
+        sceneStore.delete(id)
+        scenes = sceneStore.scenes
     }
 
     public func setPreferredOutput(_ uid: String?) {

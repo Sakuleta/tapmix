@@ -28,6 +28,7 @@ taps. No kernel extension, no virtual audio driver, no third-party dependencies.
 - `DevicePriority` — switches to the preferred output when it reconnects.
 - `HotKeyCenter`/`HotKeyController` — global Carbon hotkeys and their modifier setting.
 - `HUDController` — the non-activating volume HUD.
+- `SceneStore`/`MixScene` — named snapshots of per-app levels.
 - `TapmixURLCommand`/`URLCommandRouter` — `tapmix://` automation.
 - `PanelView`/`TapmixApp` — SwiftUI menu bar.
 

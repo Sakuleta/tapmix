@@ -29,6 +29,7 @@ no kernel extension, no virtual audio driver, and no proprietary code.
 - **URL automation** — control volume, mute, boost and routing from Shortcuts,
   Raycast or shell scripts
 - **Per-app balance and mono downmix** — shift left/right or fold to one channel
+- **Saved mixes** — name a scene and restore levels, EQ and routing later
 - **Pinned apps** stay visible while idle; **hide** an app to remove it from
   Tapmix entirely; **search** filters the list
 - **Output volume and mute** for the current default output device
@@ -142,6 +143,13 @@ In an app's sound popover choose **Import AutoEQ…** and pick a
 and `HSC` filters are applied on top of the 10 bands, stored per app, and kept
 even when the 10-band switch is off. **Clear** removes the import. The file's
 `Preamp` line is ignored; the limiter provides the headroom.
+
+### Scenes
+
+The theater-masks menu next to the header saves the current mix: levels, boost,
+EQ, AutoEQ filters, routing, night mode, balance and mono for every adjusted
+app. Pick a scene to restore it, or delete scenes from the same menu. Scenes
+are stored locally and also apply to apps that are not running yet.
 
 ### Balance and mono
 
