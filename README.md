@@ -31,6 +31,7 @@ no kernel extension, no virtual audio driver, and no proprietary code.
 - **Per-app balance and mono downmix** — shift left/right or fold to one channel
 - **Saved mixes** — name a scene and restore levels, EQ and routing later
 - **Custom EQ presets** — save bands plus AutoEQ filters and reuse them on any app
+- **Launch at login** — start Tapmix with the Mac from the gear menu
 - **Pinned apps** stay visible while idle; **hide** an app to remove it from
   Tapmix entirely; **search** filters the list
 - **Output volume and mute** for the current default output device
@@ -151,6 +152,13 @@ In an app's sound popover choose **Import AutoEQ…** and pick a
 and `HSC` filters are applied on top of the 10 bands, stored per app, and kept
 even when the 10-band switch is off. **Clear** removes the import. The file's
 `Preamp` line is ignored; the limiter provides the headroom.
+
+### Launch at login
+
+Use the gear menu in the footer. Keep the app in `/Applications` for the most
+reliable registration; moving it out of the build folder also keeps the TCC
+grant and login item stable. If macOS rejects the change, the panel shows the
+error.
 
 ### Scenes
 
