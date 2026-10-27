@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.3 — 2026-10-27
+
+- Call ducking only triggers for conferencing apps and browsers; recorders
+  that hold the microphone (Hex, screen recorders, virtual drivers) no longer
+  lower the mix
+- Per-process microphone detection replaces the device-wide flag
+
 ## 0.2.2 — 2026-10-27
 
 - Audio Unit effects: host an installed AUv2 effect per app from a searchable sheet
