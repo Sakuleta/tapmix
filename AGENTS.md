@@ -25,6 +25,7 @@ taps. No kernel extension, no virtual audio driver, no third-party dependencies.
 - `EQSettings` — per-app bands and AutoEQ filters; persisted in `AppLevel`.
 - `EQPresetStore`/`SavedEQPreset` — user EQ presets shared across apps.
 - `EQFilterParser` — reads AutoEQ/Equalizer APO `ParametricEQ.txt` files.
+- `AutoEQCatalog` — indexes a local AutoEQ results folder for search.
 - `AudioEngine` — 1s poll, UI state, user actions, hotkey target.
 - `DuckingPolicy` — microphone-activity hysteresis; never reads audio.
 - `DevicePriority` — switches to the preferred output when it reconnects.

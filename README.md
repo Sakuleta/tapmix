@@ -32,6 +32,7 @@ no kernel extension, no virtual audio driver, and no proprietary code.
 - **Saved mixes** — name a scene and restore levels, EQ and routing later
 - **Custom EQ presets** — save bands plus AutoEQ filters and reuse them on any app
 - **EQ response curve** — see the combined band/AutoEQ response while editing
+- **Local AutoEQ catalog** — point Tapmix at an AutoEQ results folder and search it
 - **Launch at login** — start Tapmix with the Mac from the gear menu
 - **Pinned apps** stay visible while idle; **hide** an app to remove it from
   Tapmix entirely; **search** filters the list
@@ -159,6 +160,10 @@ In an app's sound popover choose **Import AutoEQ…** and pick a
 and `HSC` filters are applied on top of the 10 bands, stored per app, and kept
 even when the 10-band switch is off. **Clear** removes the import. The file's
 `Preamp` line is ignored; the limiter provides the headroom.
+
+To search a downloaded AutoEQ results folder, choose **AutoEQ → Browse
+folder…** once; Tapmix indexes the `ParametricEQ.txt` files locally and opens a
+searchable catalog. Nothing is downloaded by Tapmix.
 
 ### Launch at login
 

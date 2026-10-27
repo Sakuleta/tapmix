@@ -590,6 +590,10 @@ private struct EQPanel: View {
     @State private var importing = false
     @State private var presetName = ""
     @State private var showingSavePreset = false
+    @State private var showingFolderPicker = false
+    @State private var showingCatalog = false
+    @State private var catalogProfiles: [AutoEQProfile] = []
+    @AppStorage("com.mardinli.tapmix.autoEQFolderPath") private var autoEQFolderPath = ""
 
     init(
         bundleID: String,
@@ -702,12 +706,18 @@ private struct EQPanel: View {
             }
 
             HStack(spacing: 6) {
-                if settings.filters.isEmpty {
-                    Button("Import AutoEQ…") {
-                        importing = true
+                Menu("AutoEQ") {
+                    Button("Import file…") { importing = true }
+                    Button("Browse folder…") { showingFolderPicker = true }
+                    if !autoEQFolderPath.isEmpty {
+                        Button("Open catalog") { loadCatalog() }
                     }
-                } else {
-                    Text("\(settings.filters.count) AutoEQ filters")
+                }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+
+                if !settings.filters.isEmpty {
+                    Text("\(settings.filters.count) filters")
                         .font(.system(size: 9))
                         .foregroundStyle(.secondary)
                     Spacer()
@@ -784,6 +794,37 @@ private struct EQPanel: View {
             settings.filters = filters
             apply()
         }
+        .fileImporter(
+            isPresented: $showingFolderPicker,
+            allowedContentTypes: [UTType.folder],
+            allowsMultipleSelection: false
+        ) { result in
+            guard case let .success(urls) = result, let url = urls.first else { return }
+            let accessed = url.startAccessingSecurityScopedResource()
+            defer {
+                if accessed {
+                    url.stopAccessingSecurityScopedResource()
+                }
+            }
+            autoEQFolderPath = url.path
+            catalogProfiles = AutoEQCatalog.scan(folder: url)
+            showingCatalog = !catalogProfiles.isEmpty
+        }
+        .sheet(isPresented: $showingCatalog) {
+            AutoEQCatalogView(profiles: catalogProfiles) { profile in
+                let filters = AutoEQCatalog.filters(for: profile)
+                guard !filters.isEmpty else { return }
+                settings.filters = filters
+                apply()
+            }
+        }
+    }
+
+    private func loadCatalog() {
+        catalogProfiles = AutoEQCatalog.scan(
+            folder: URL(fileURLWithPath: autoEQFolderPath)
+        )
+        showingCatalog = !catalogProfiles.isEmpty
     }
 
     private func apply() {
@@ -891,5 +932,46 @@ private struct EQCurveShape: Shape {
             }
         }
         return path
+    }
+}
+
+private struct AutoEQCatalogView: View {
+    let profiles: [AutoEQProfile]
+    let onSelect: (AutoEQProfile) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var query = ""
+
+    private var filtered: [AutoEQProfile] {
+        guard !query.isEmpty else { return profiles }
+        return profiles.filter { $0.name.localizedCaseInsensitiveContains(query) }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("AutoEQ profiles")
+                    .font(.headline)
+                Spacer()
+                Button("Close") { dismiss() }
+            }
+
+            TextField("Search headphones", text: $query)
+                .textFieldStyle(.roundedBorder)
+
+            List(filtered) { profile in
+                Button(profile.name) {
+                    onSelect(profile)
+                    dismiss()
+                }
+                .buttonStyle(.plain)
+            }
+
+            Text("\(filtered.count) of \(profiles.count) profiles")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .padding(14)
+        .frame(width: 420, height: 460)
     }
 }
