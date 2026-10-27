@@ -284,6 +284,25 @@ Tests/TapmixTests/
 - **Signing.** Ad-hoc signing is the fallback; TCC grants do not survive
   rebuilds without the stable identity described above.
 
+## Release
+
+```bash
+./scripts/release.sh            # uses CFBundleShortVersionString
+./scripts/release.sh 0.2.1      # explicit version
+```
+
+The script builds a release bundle, signs it, and writes
+`dist/Tapmix-<version>.zip` with a SHA-256. Without a Developer ID it produces
+a local development zip. For notarization, store credentials once and set the
+profile:
+
+```bash
+xcrun notarytool store-credentials "tapmix" \
+  --apple-id "you@example.com" --team-id TEAMID --password APP_SPECIFIC_PASSWORD
+
+NOTARY_PROFILE=tapmix ./scripts/release.sh
+```
+
 ## Roadmap
 
 1. A searchable AutoEQ catalog and editable parametric filters
