@@ -218,8 +218,8 @@ Tests/TapmixTests/
   share a slider.
 - **Output volume depends on the device.** The slider uses the HAL volume
   property; some HDMI/USB interfaces expose no software volume and ignore it.
-- **Routing gap.** Switching an app to another output rebuilds its tap, so a
-  brief gap is audible; there is no crossfade yet.
+- **Route changes crossfade.** The old tap fades out and stops after 60 ms
+  while the new tap starts on the target device.
 - **Polling discovery.** The app list refreshes every second (ducking included)
   and meters at 10 Hz; HAL listeners are a later optimization.
 - **Call detection is microphone-based.** Any recording app can trigger
@@ -235,12 +235,10 @@ Tests/TapmixTests/
 
 ## Roadmap
 
-1. Crossfade when a route or output device changes
+1. HAL listeners instead of polling; hotplug and sample-rate handling
 2. A searchable AutoEQ catalog and editable parametric filters
-3. HAL listeners instead of polling; hotplug and sample-rate handling
-4. Configurable hotkeys and media-key handling
-5. Pinned/active app list and ignore list
-6. Notarized, Developer ID-signed release
+3. Configurable hotkeys and media-key handling
+4. Notarized, Developer ID-signed release
 
 ## License
 

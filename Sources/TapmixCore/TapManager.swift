@@ -18,6 +18,7 @@ final class TapManager {
     }
 
     typealias TapFactory = (AudioObjectID, String, String) -> any TapControlling
+    typealias Scheduler = @MainActor (TimeInterval, @escaping @MainActor () -> Void) -> Void
 
     static let healthWindow: TimeInterval = 6
     static let retryDelays: [TimeInterval] = [15, 30, 60, 120, 300]
@@ -32,7 +33,9 @@ final class TapManager {
 
     private let makeTap: TapFactory
     private let now: () -> Date
+    private let schedule: Scheduler
     private var taps: [AudioObjectID: any TapControlling] = [:]
+    private var retiring: [any TapControlling] = []
     private var failures: [AudioObjectID: Failure] = [:]
     private var gains: [String: Float] = [:]
     private var eqs: [String: EQSettings] = [:]
@@ -48,10 +51,17 @@ final class TapManager {
                 outputDeviceUID: outputUID
             )
         },
-        now: @escaping () -> Date = Date.init
+        now: @escaping () -> Date = Date.init,
+        schedule: @escaping Scheduler = { delay, work in
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(delay))
+                work()
+            }
+        }
     ) {
         self.makeTap = makeTap
         self.now = now
+        self.schedule = schedule
     }
 
     var activeProcessIDs: Set<AudioObjectID> { Set(taps.keys) }
@@ -101,28 +111,30 @@ final class TapManager {
 
         for id in desiredIDs.sorted() {
             guard let desiredTap = unique[id] else { continue }
-            if let tap = taps[id] {
-                if tapOutputs[id] == desiredTap.outputUID {
-                    tap.setGain(gains[tap.bundleID] ?? 1)
-                    tap.setEQ(eqs[tap.bundleID] ?? EQSettings())
-                    continue
-                }
-                tap.stop()
-                taps[id] = nil
-                tapOutputs[id] = nil
-                failures[id] = nil
+            if let tap = taps[id], tapOutputs[id] == desiredTap.outputUID {
+                tap.setGain(gains[tap.bundleID] ?? 1)
+                tap.setEQ(eqs[tap.bundleID] ?? EQSettings())
+                tap.setNightMode(nightModes[tap.bundleID] ?? false)
+                continue
             }
             if let failure = failures[id], now() < failure.retryAt {
                 continue
             }
 
-            let tap = makeTap(id, desiredTap.bundleID, desiredTap.outputUID)
+            let existing = taps[id]
+            let replacement = makeTap(id, desiredTap.bundleID, desiredTap.outputUID)
             do {
-                try tap.start()
-                tap.setGain(gains[desiredTap.bundleID] ?? 1)
-                tap.setEQ(eqs[desiredTap.bundleID] ?? EQSettings())
-                tap.setNightMode(nightModes[desiredTap.bundleID] ?? false)
-                taps[id] = tap
+                try replacement.start()
+                replacement.setGain(gains[desiredTap.bundleID] ?? 1)
+                replacement.setEQ(eqs[desiredTap.bundleID] ?? EQSettings())
+                replacement.setNightMode(nightModes[desiredTap.bundleID] ?? false)
+
+                if let existing {
+                    existing.setGain(0)
+                    retire(existing)
+                }
+
+                taps[id] = replacement
                 tapOutputs[id] = desiredTap.outputUID
                 failures[id] = nil
             } catch {
@@ -145,7 +157,21 @@ final class TapManager {
         health = .ok
     }
 
+    private func retire(_ tap: any TapControlling) {
+        retiring.append(tap)
+        let token = ObjectIdentifier(tap)
+        schedule(0.06) { [weak self] in
+            tap.stop()
+            self?.retiring.removeAll { ObjectIdentifier($0) == token }
+        }
+    }
+
     private func stopAllTaps() {
+        for tap in retiring {
+            tap.stop()
+        }
+        retiring.removeAll()
+
         for tap in taps.values {
             tap.stop()
         }

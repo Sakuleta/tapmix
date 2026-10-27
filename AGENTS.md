@@ -16,7 +16,7 @@ taps. No kernel extension, no virtual audio driver, no third-party dependencies.
 - `AudioCatalog` — pure snapshot → rows + per-bundle processes.
 - `AppResolver` — pure helper-process → host-app resolution.
 - `RunningAppDescriptor` — the only place that reads `NSRunningApplication`.
-- `TapManager` — tap lifecycle, per-tap health, backoff, output rebuild.
+- `TapManager` — tap lifecycle, per-tap health, backoff, crossfaded routes.
 - `TapController` — one tap + one private aggregate + one IO proc.
 - `TapRender` — frame-major buffer copy/gain; the realtime seam.
 - `EQProcessor` — ten peaking biquads per channel, coefficients built off-thread.
