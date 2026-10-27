@@ -1,0 +1,12 @@
+import CoreAudio
+import Foundation
+
+protocol TapControlling: AnyObject {
+    var processObjectID: AudioObjectID { get }
+    var bundleID: String { get }
+    var createdAt: Date { get }
+    var callbackCount: UInt64 { get }
+    func start() throws
+    func stop()
+    func setGain(_ gain: Float)
+}

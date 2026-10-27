@@ -79,20 +79,47 @@ enum AudioSystem {
         _ = setScalar(device, element: 2, value: value)
     }
 
+    /// Main-element mute wins; otherwise the device counts as muted only when
+    /// every channel reports muted. `nil` means the device has no mute property.
+    static func combinedMute(main: Bool?, channels: [Bool]) -> Bool? {
+        if let main { return main }
+        guard !channels.isEmpty else { return nil }
+        return channels.allSatisfy { $0 }
+    }
+
     static func outputMuted(_ device: AudioObjectID) -> Bool? {
-        guard let value: UInt32 = read(device, kAudioDevicePropertyMute, scope: scopeOutput) else {
-            return nil
+        let mainValue: UInt32? = read(device, kAudioDevicePropertyMute, scope: scopeOutput)
+        let main = mainValue.map { $0 != 0 }
+        var channels: [Bool] = []
+        for channel: UInt32 in [1, 2] {
+            if let value: UInt32 = read(
+                device,
+                kAudioDevicePropertyMute,
+                scope: scopeOutput,
+                element: channel
+            ) {
+                channels.append(value != 0)
+            }
         }
-        return value != 0
+        return combinedMute(main: main, channels: channels)
     }
 
     static func setOutputMuted(_ device: AudioObjectID, _ muted: Bool) {
-        var address = propertyAddress(kAudioDevicePropertyMute, scope: scopeOutput)
         var value: UInt32 = muted ? 1 : 0
         let size = UInt32(MemoryLayout<UInt32>.size)
-        if AudioObjectSetPropertyData(device, &address, 0, nil, size, &value) != noErr {
-            var channelAddress = propertyAddress(kAudioDevicePropertyMute, scope: scopeOutput, element: 1)
-            _ = AudioObjectSetPropertyData(device, &channelAddress, 0, nil, size, &value)
+
+        var mainAddress = propertyAddress(kAudioDevicePropertyMute, scope: scopeOutput)
+        if AudioObjectSetPropertyData(device, &mainAddress, 0, nil, size, &value) == noErr {
+            return
+        }
+
+        for channel: UInt32 in [1, 2] {
+            var address = propertyAddress(
+                kAudioDevicePropertyMute,
+                scope: scopeOutput,
+                element: channel
+            )
+            _ = AudioObjectSetPropertyData(device, &address, 0, nil, size, &value)
         }
     }
 
@@ -126,9 +153,10 @@ enum AudioSystem {
     static func read<T>(
         _ objectID: AudioObjectID,
         _ selector: AudioObjectPropertySelector,
-        scope: AudioObjectPropertyScope = scopeGlobal
+        scope: AudioObjectPropertyScope = scopeGlobal,
+        element: AudioObjectPropertyElement = elementMain
     ) -> T? {
-        var address = propertyAddress(selector, scope: scope)
+        var address = propertyAddress(selector, scope: scope, element: element)
         var size = UInt32(MemoryLayout<T>.size)
         let pointer = UnsafeMutablePointer<T>.allocate(capacity: 1)
         defer { pointer.deallocate() }

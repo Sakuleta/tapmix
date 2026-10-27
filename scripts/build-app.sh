@@ -5,7 +5,17 @@ cd "$(dirname "$0")/.."
 
 CONFIG="${1:-release}"
 APP="build/Tapmix.app"
-IDENTITY="${CODESIGN_IDENTITY:--}"
+DEFAULT_IDENTITY="Tapmix Dev"
+
+if [[ -n "${CODESIGN_IDENTITY:-}" ]]; then
+    IDENTITY="$CODESIGN_IDENTITY"
+elif security find-identity -v -p codesigning 2>/dev/null | grep -Fq "$DEFAULT_IDENTITY"; then
+    IDENTITY="$DEFAULT_IDENTITY"
+else
+    IDENTITY="-"
+    echo "warning: using ad-hoc signing; macOS may ask for audio permission after each rebuild."
+    echo "         Create a 'Tapmix Dev' code-signing certificate (see README) or set CODESIGN_IDENTITY."
+fi
 
 swift build -c "$CONFIG"
 BIN_DIR="$(swift build -c "$CONFIG" --show-bin-path)"
@@ -16,7 +26,7 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN" "$APP/Contents/MacOS/Tapmix"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 
-codesign --force --sign "$IDENTITY" --identifier com.sakuleta.tapmix "$APP"
+codesign --force --sign "$IDENTITY" --identifier com.mardinli.tapmix "$APP"
 
-echo "Built $APP"
+echo "Built $APP (signed with: $IDENTITY)"
 echo "Run with: open $APP"

@@ -53,40 +53,32 @@ enum AppResolver {
         "corespeech"
     ]
 
-    static func resolve(_ process: AudioProcess, running: [NSRunningApplication]) -> AppIdentity? {
+    static func resolve(_ process: AudioProcess, running: [RunningAppDescriptor]) -> AppIdentity? {
         let ownBundleID = Bundle.main.bundleIdentifier
-        if process.bundleID == ownBundleID || process.bundleID == "com.sakuleta.tapmix" {
+        if process.bundleID == ownBundleID || process.bundleID == "com.mardinli.tapmix" {
             return nil
         }
 
-        let direct = NSRunningApplication(processIdentifier: process.pid)
-        var host: NSRunningApplication?
+        let direct = running.first { $0.pid == process.pid }
+        var host: RunningAppDescriptor?
 
-        if let direct,
-           direct.activationPolicy == .regular,
-           direct.bundleURL?.pathExtension == "app" {
+        if let direct, direct.isRegular, direct.bundlePath?.hasSuffix(".app") == true {
             host = direct
         }
 
-        if host == nil,
-           let executable = direct?.executableURL?.resolvingSymlinksInPath().path {
+        if host == nil, let executable = direct?.executablePath {
             host = running.first { app in
-                guard app.activationPolicy != .prohibited,
-                      let appPath = app.bundleURL?.resolvingSymlinksInPath().path
-                else { return false }
-                return executable == appPath || executable.hasPrefix(appPath + "/")
+                guard !app.isProhibited, let path = app.bundlePath else { return false }
+                return executable == path || executable.hasPrefix(path + "/")
             }
         }
 
         // Hide daemons and orphan helpers: only real, user-facing applications get a row.
-        guard let host,
-              let hostBundleID = host.bundleIdentifier
-        else { return nil }
+        guard let host, let bundleID = host.bundleID else { return nil }
 
-        let bundleID = hostBundleID
-        let name = host.localizedName
-            ?? bundleID.split(separator: ".").last.map(String.init)
-            ?? bundleID
+        let name = host.name.isEmpty
+            ? (bundleID.split(separator: ".").last.map(String.init) ?? bundleID)
+            : host.name
 
         guard !bundleID.isEmpty, !isIgnored(bundleID: bundleID, name: name) else {
             return nil

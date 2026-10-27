@@ -41,7 +41,7 @@ rediscover the RT-safety and permission rules.
 ```bash
 IDENTITY="${CODESIGN_IDENTITY:--}"
 ...
-codesign --force --sign "$IDENTITY" --identifier com.sakuleta.tapmix "$APP"
+codesign --force --sign "$IDENTITY" --identifier com.mardinli.tapmix "$APP"
 ```
 
 `README.md:53-61` says "Set `CODESIGN_IDENTITY` to a stable self-signed
