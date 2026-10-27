@@ -123,6 +123,22 @@ public final class AudioEngine: ObservableObject {
         refresh()
     }
 
+    public func setBalance(_ bundleID: String, _ balance: Float) {
+        var level = store.level(for: bundleID)
+        level.balance = min(max(balance, -1), 1)
+        store.set(level, for: bundleID)
+        tapManager.setBalance(level.balance, for: bundleID)
+        updateRow(bundleID, balance: level.balance)
+    }
+
+    public func setMono(_ bundleID: String, _ enabled: Bool) {
+        var level = store.level(for: bundleID)
+        level.mono = enabled
+        store.set(level, for: bundleID)
+        tapManager.setMono(enabled, for: bundleID)
+        updateRow(bundleID, mono: enabled)
+    }
+
     public func setNightMode(_ bundleID: String, _ enabled: Bool) {
         var level = store.level(for: bundleID)
         level.nightMode = enabled
@@ -475,7 +491,9 @@ public final class AudioEngine: ObservableObject {
         boost: Float? = nil,
         eq: EQSettings? = nil,
         routeUID: String? = nil,
-        nightMode: Bool? = nil
+        nightMode: Bool? = nil,
+        balance: Float? = nil,
+        mono: Bool? = nil
     ) {
         guard let index = apps.firstIndex(where: { $0.bundleID == bundleID }) else { return }
         if let volume {
@@ -495,6 +513,12 @@ public final class AudioEngine: ObservableObject {
         }
         if let nightMode {
             apps[index].nightMode = nightMode
+        }
+        if let balance {
+            apps[index].balance = balance
+        }
+        if let mono {
+            apps[index].mono = mono
         }
     }
 }

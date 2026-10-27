@@ -40,6 +40,8 @@ final class TapManager {
     private var gains: [String: Float] = [:]
     private var eqs: [String: EQSettings] = [:]
     private var nightModes: [String: Bool] = [:]
+    private var balances: [String: Float] = [:]
+    private var monos: [String: Bool] = [:]
     private var tapOutputs: [AudioObjectID: String] = [:]
     private(set) var health: Health = .ok
 
@@ -81,6 +83,20 @@ final class TapManager {
         }
     }
 
+    func setBalance(_ balance: Float, for bundleID: String) {
+        balances[bundleID] = min(max(balance, -1), 1)
+        for tap in taps.values where tap.bundleID == bundleID {
+            tap.setBalance(balance)
+        }
+    }
+
+    func setMono(_ enabled: Bool, for bundleID: String) {
+        monos[bundleID] = enabled
+        for tap in taps.values where tap.bundleID == bundleID {
+            tap.setMono(enabled)
+        }
+    }
+
     func peakLevel(for bundleID: String) -> Float {
         var peak: Float = 0
         for tap in taps.values where tap.bundleID == bundleID {
@@ -115,6 +131,8 @@ final class TapManager {
                 tap.setGain(gains[tap.bundleID] ?? 1)
                 tap.setEQ(eqs[tap.bundleID] ?? EQSettings())
                 tap.setNightMode(nightModes[tap.bundleID] ?? false)
+                tap.setBalance(balances[tap.bundleID] ?? 0)
+                tap.setMono(monos[tap.bundleID] ?? false)
                 continue
             }
             if let failure = failures[id], now() < failure.retryAt {
@@ -128,6 +146,8 @@ final class TapManager {
                 replacement.setGain(gains[desiredTap.bundleID] ?? 1)
                 replacement.setEQ(eqs[desiredTap.bundleID] ?? EQSettings())
                 replacement.setNightMode(nightModes[desiredTap.bundleID] ?? false)
+                replacement.setBalance(balances[desiredTap.bundleID] ?? 0)
+                replacement.setMono(monos[desiredTap.bundleID] ?? false)
 
                 if let existing {
                     existing.setGain(0)

@@ -19,6 +19,8 @@ final class FakeTap: TapControlling {
     private(set) var gain: Float = 1
     private(set) var eq = EQSettings()
     private(set) var nightMode = false
+    private(set) var balance: Float = 0
+    private(set) var mono = false
 
     init(processObjectID: AudioObjectID, bundleID: String, createdAt: Date) {
         self.processObjectID = processObjectID
@@ -34,6 +36,8 @@ final class FakeTap: TapControlling {
     func setGain(_ gain: Float) { self.gain = gain }
     func setEQ(_ settings: EQSettings) { eq = settings }
     func setNightMode(_ enabled: Bool) { nightMode = enabled }
+    func setBalance(_ value: Float) { balance = value }
+    func setMono(_ enabled: Bool) { mono = enabled }
     func takePeakLevel() -> Float {
         defer { peak = 0 }
         return peak
@@ -285,6 +289,16 @@ final class TapManagerTests: XCTestCase {
         XCTAssertEqual(created[0].gain, 0)
         XCTAssertEqual(created[0].stopCount, 1)
         XCTAssertEqual(manager.activeProcessIDs, [])
+    }
+
+    func testBalanceAndMonoPropagate() {
+        let a = desired(1, "com.a")
+        manager.setBalance(-0.5, for: "com.a")
+        manager.setMono(true, for: "com.a")
+        sync([a])
+
+        XCTAssertEqual(created[0].balance, -0.5, accuracy: 0.0001)
+        XCTAssertTrue(created[0].mono)
     }
 
     func testNightModePropagatesToTaps() {

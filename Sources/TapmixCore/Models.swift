@@ -10,6 +10,9 @@ public struct AppLevel: Codable, Equatable {
     /// Explicit output device; `nil` follows the system default.
     public var outputUID: String?
     public var nightMode: Bool
+    /// -1 is full left, 0 is center, +1 is full right.
+    public var balance: Float
+    public var mono: Bool
 
     public init(
         volume: Float = 1,
@@ -17,7 +20,9 @@ public struct AppLevel: Codable, Equatable {
         boost: Float = 1,
         eq: EQSettings = EQSettings(),
         outputUID: String? = nil,
-        nightMode: Bool = false
+        nightMode: Bool = false,
+        balance: Float = 0,
+        mono: Bool = false
     ) {
         self.volume = volume
         self.muted = muted
@@ -25,6 +30,8 @@ public struct AppLevel: Codable, Equatable {
         self.eq = eq
         self.outputUID = outputUID
         self.nightMode = nightMode
+        self.balance = balance
+        self.mono = mono
     }
 
     public var gain: Float {
@@ -32,7 +39,7 @@ public struct AppLevel: Codable, Equatable {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case volume, muted, boost, eq, outputUID, nightMode
+        case volume, muted, boost, eq, outputUID, nightMode, balance, mono
     }
 
     public init(from decoder: Decoder) throws {
@@ -43,6 +50,8 @@ public struct AppLevel: Codable, Equatable {
         eq = try container.decodeIfPresent(EQSettings.self, forKey: .eq) ?? EQSettings()
         outputUID = try container.decodeIfPresent(String.self, forKey: .outputUID)
         nightMode = try container.decodeIfPresent(Bool.self, forKey: .nightMode) ?? false
+        balance = try container.decodeIfPresent(Float.self, forKey: .balance) ?? 0
+        mono = try container.decodeIfPresent(Bool.self, forKey: .mono) ?? false
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -53,6 +62,8 @@ public struct AppLevel: Codable, Equatable {
         try container.encode(eq, forKey: .eq)
         try container.encodeIfPresent(outputUID, forKey: .outputUID)
         try container.encode(nightMode, forKey: .nightMode)
+        try container.encode(balance, forKey: .balance)
+        try container.encode(mono, forKey: .mono)
     }
 }
 
@@ -108,6 +119,8 @@ public struct AppRow: Identifiable, Equatable {
     public var eq: EQSettings
     public var routeUID: String?
     public var nightMode: Bool
+    public var balance: Float
+    public var mono: Bool
 
     public init(
         bundleID: String,
@@ -121,7 +134,9 @@ public struct AppRow: Identifiable, Equatable {
         level: Float = 0,
         eq: EQSettings = EQSettings(),
         routeUID: String? = nil,
-        nightMode: Bool = false
+        nightMode: Bool = false,
+        balance: Float = 0,
+        mono: Bool = false
     ) {
         self.bundleID = bundleID
         self.name = name
@@ -135,6 +150,8 @@ public struct AppRow: Identifiable, Equatable {
         self.eq = eq
         self.routeUID = routeUID
         self.nightMode = nightMode
+        self.balance = balance
+        self.mono = mono
     }
 }
 

@@ -24,7 +24,9 @@ struct AppGroup {
             pinned: pinned,
             eq: level.eq,
             routeUID: level.outputUID,
-            nightMode: level.nightMode
+            nightMode: level.nightMode,
+            balance: level.balance,
+            mono: level.mono
         )
     }
 }
