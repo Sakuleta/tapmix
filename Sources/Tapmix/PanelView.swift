@@ -181,18 +181,17 @@ struct PanelView: View {
                 .foregroundStyle(engine.outputMuted ? .red : .secondary)
                 .accessibilityLabel(engine.outputMuted ? "Unmute output" : "Mute output")
 
-                Slider(
+                VolumeSlider(
                     value: Binding(
                         get: { engine.outputVolume },
                         set: { engine.setOutputVolume($0) }
                     ),
-                    in: 0 ... 1
+                    range: 0 ... 1,
+                    label: "Output volume",
+                    valueDescription: "\(Int((engine.outputVolume * 100).rounded())) percent"
                 ) { editing in
                     engine.isEditingOutputVolume = editing
                 }
-                .controlSize(.small)
-                .accessibilityLabel("Output volume")
-                .accessibilityValue("\(Int((engine.outputVolume * 100).rounded())) percent")
             }
         }
         .padding(.horizontal, 12)
