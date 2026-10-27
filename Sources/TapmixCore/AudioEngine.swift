@@ -78,7 +78,7 @@ public final class AudioEngine: ObservableObject {
         meterTimer?.invalidate()
         meterTimer = nil
         removeListeners()
-        tapManager.stopAll()
+        tapManager.fadeOutAndStop()
     }
 
     public func retry() {

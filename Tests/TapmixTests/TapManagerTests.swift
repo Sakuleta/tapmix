@@ -276,6 +276,17 @@ final class TapManagerTests: XCTestCase {
         XCTAssertEqual(manager.activeProcessIDs, [1])
     }
 
+    func testFadeOutAndStopSilencesBeforeStopping() {
+        let a = desired(1, "com.a")
+        sync([a])
+
+        manager.fadeOutAndStop()
+
+        XCTAssertEqual(created[0].gain, 0)
+        XCTAssertEqual(created[0].stopCount, 1)
+        XCTAssertEqual(manager.activeProcessIDs, [])
+    }
+
     func testNightModePropagatesToTaps() {
         let a = desired(1, "com.a")
         manager.setNightMode(true, for: "com.a")
