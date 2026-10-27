@@ -42,6 +42,12 @@ public struct AudioDevice: Hashable, Identifiable {
 
 /// Thin wrappers around the Core Audio HAL properties this app needs.
 enum AudioSystem {
+    struct PropertyListener {
+        let objectID: AudioObjectID
+        let address: AudioObjectPropertyAddress
+        let block: AudioObjectPropertyListenerBlock
+    }
+
     static let systemObject = AudioObjectID(kAudioObjectSystemObject)
     static let elementMain = kAudioObjectPropertyElementMain
     static let scopeGlobal = kAudioObjectPropertyScopeGlobal
@@ -198,6 +204,25 @@ enum AudioSystem {
         element: AudioObjectPropertyElement = elementMain
     ) -> AudioObjectPropertyAddress {
         AudioObjectPropertyAddress(mSelector: selector, mScope: scope, mElement: element)
+    }
+
+    static func addListener(
+        _ objectID: AudioObjectID,
+        _ selector: AudioObjectPropertySelector,
+        scope: AudioObjectPropertyScope = scopeGlobal,
+        handler: @escaping () -> Void
+    ) -> PropertyListener? {
+        var address = propertyAddress(selector, scope: scope)
+        let block: AudioObjectPropertyListenerBlock = { _, _ in handler() }
+        guard AudioObjectAddPropertyListenerBlock(objectID, &address, .main, block) == noErr else {
+            return nil
+        }
+        return PropertyListener(objectID: objectID, address: address, block: block)
+    }
+
+    static func removeListener(_ listener: PropertyListener) {
+        var address = listener.address
+        AudioObjectRemovePropertyListenerBlock(listener.objectID, &address, .main, listener.block)
     }
 
     static func objectList(_ selector: AudioObjectPropertySelector) -> [AudioObjectID] {

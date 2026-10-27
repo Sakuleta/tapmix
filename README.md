@@ -220,8 +220,9 @@ Tests/TapmixTests/
   property; some HDMI/USB interfaces expose no software volume and ignore it.
 - **Route changes crossfade.** The old tap fades out and stops after 60 ms
   while the new tap starts on the target device.
-- **Polling discovery.** The app list refreshes every second (ducking included)
-  and meters at 10 Hz; HAL listeners are a later optimization.
+- **HAL listeners plus a safety poll.** Device, default-output and process
+  changes arrive immediately; a one-second timer remains for ducking and as a
+  fallback, and meters update at 10 Hz.
 - **Call detection is microphone-based.** Any recording app can trigger
   ducking, and a browser-based call exempts the whole browser.
 - **Device priority reacts to connections only.** It does not fight a manual
@@ -235,10 +236,9 @@ Tests/TapmixTests/
 
 ## Roadmap
 
-1. HAL listeners instead of polling; hotplug and sample-rate handling
-2. A searchable AutoEQ catalog and editable parametric filters
-3. Configurable hotkeys and media-key handling
-4. Notarized, Developer ID-signed release
+1. A searchable AutoEQ catalog and editable parametric filters
+2. Configurable hotkeys and media-key handling
+3. Notarized, Developer ID-signed release
 
 ## License
 
