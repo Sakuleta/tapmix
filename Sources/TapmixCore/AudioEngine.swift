@@ -147,12 +147,25 @@ public final class AudioEngine: ObservableObject {
         updateRow(bundleID, boost: level.boost)
     }
 
-    public func toggleMute(_ bundleID: String) {
+    public func setMuted(_ bundleID: String, _ muted: Bool) {
         var level = store.level(for: bundleID)
-        level.muted.toggle()
+        level.muted = muted
         store.set(level, for: bundleID)
         tapManager.setGain(effectiveGain(level, bundleID: bundleID), for: bundleID)
-        updateRow(bundleID, muted: level.muted)
+        updateRow(bundleID, muted: muted)
+    }
+
+    public func toggleMute(_ bundleID: String) {
+        setMuted(bundleID, !store.level(for: bundleID).muted)
+    }
+
+    public func stepVolume(_ bundleID: String, by delta: Float) {
+        var level = store.level(for: bundleID)
+        level.volume = min(max(level.volume + delta, 0), 2)
+        level.muted = false
+        store.set(level, for: bundleID)
+        tapManager.setGain(effectiveGain(level, bundleID: bundleID), for: bundleID)
+        updateRow(bundleID, volume: level.volume, muted: false)
     }
 
     public func setOutputVolume(_ volume: Double) {
