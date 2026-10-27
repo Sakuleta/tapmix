@@ -26,6 +26,7 @@ struct PanelView: View {
         }
         .frame(width: 360, height: panelHeight)
         .background(PanelSurface())
+        .background(MenuBarAnchor())
         .onAppear { engine.setPanelVisible(true) }
         .onDisappear { engine.setPanelVisible(false) }
         .alert("Save current mix", isPresented: $showingSaveScene) {
