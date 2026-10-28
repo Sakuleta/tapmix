@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.3 — 2026-10-28
+
+- An app that LaunchServices does not list now gets a row and can be controlled:
+  iOS Simulator apps, and anything started outside a normal app launch. The
+  identity comes from the process's own app bundle instead of
+  `NSWorkspace.runningApplications`, so playback from the Simulator no longer
+  plays with no slider next to it
+
 ## 0.3.2 — 2026-10-27
 
 - A process that captures the microphone plays untouched until the call ends;
