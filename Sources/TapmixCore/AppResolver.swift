@@ -73,6 +73,12 @@ enum AppResolver {
             }
         }
 
+        // Simulator apps and binaries launched outside LaunchServices have no
+        // NSRunningApplication, but they still own a real app bundle.
+        if host == nil, let identity = bundleIdentity(for: process) {
+            return identity
+        }
+
         // Hide daemons and orphan helpers: only real, user-facing applications get a row.
         guard let host, let bundleID = host.bundleID else { return nil }
 
@@ -88,6 +94,65 @@ enum AppResolver {
             ?? NSImage(systemSymbolName: "app.fill", accessibilityDescription: nil)
 
         return AppIdentity(bundleID: bundleID, name: name, icon: icon)
+    }
+
+    private static let bundleIdentities = NSCache<NSString, IdentityBox>()
+
+    private final class IdentityBox: NSObject {
+        let identity: AppIdentity?
+        init(_ identity: AppIdentity?) {
+            self.identity = identity
+        }
+    }
+
+    /// Identity read from the process's own app bundle. The bundle is cached per
+    /// path: reading it on every refresh would hit LaunchServices once a second.
+    private static func bundleIdentity(for process: AudioProcess) -> AppIdentity? {
+        guard let path = process.executablePath, let appPath = enclosingApp(path) else { return nil }
+        let key = appPath as NSString
+        if let cached = bundleIdentities.object(forKey: key) {
+            return cached.identity
+        }
+
+        let identity = readIdentity(appPath: appPath, fallbackBundleID: process.bundleID)
+        bundleIdentities.setObject(IdentityBox(identity), forKey: key)
+        return identity
+    }
+
+    private static func readIdentity(appPath: String, fallbackBundleID: String) -> AppIdentity? {
+        guard let bundle = Bundle(path: appPath),
+              bundle.object(forInfoDictionaryKey: "CFBundlePackageType") as? String == "APPL"
+        else { return nil }
+
+        let bundleID = bundle.bundleIdentifier ?? fallbackBundleID
+        let name = bundle.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String
+            ?? bundle.object(forInfoDictionaryKey: "CFBundleName") as? String
+            ?? URL(fileURLWithPath: appPath).deletingPathExtension().lastPathComponent
+
+        guard !bundleID.isEmpty, !isIgnored(bundleID: bundleID, name: name) else { return nil }
+        return AppIdentity(
+            bundleID: bundleID,
+            name: name,
+            icon: NSWorkspace.shared.icon(forFile: appPath)
+        )
+    }
+
+    /// Nearest `.app` ancestor of the executable, unless that app lives inside
+    /// another bundle: a helper's own bundle still belongs to its host.
+    private static func enclosingApp(_ executablePath: String) -> String? {
+        var url = URL(fileURLWithPath: executablePath)
+        while url.pathComponents.count > 1 {
+            if url.pathExtension == "app" {
+                var parent = url.deletingLastPathComponent()
+                while parent.pathComponents.count > 1 {
+                    if parent.pathExtension == "app" { return nil }
+                    parent = parent.deletingLastPathComponent()
+                }
+                return url.path
+            }
+            url = url.deletingLastPathComponent()
+        }
+        return nil
     }
 
     private static func isIgnored(bundleID: String, name: String) -> Bool {

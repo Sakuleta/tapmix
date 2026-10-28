@@ -278,6 +278,48 @@ final class AudioCatalogTests: XCTestCase {
         XCTAssertEqual(result.map(\.name), ["Zebra", "Alpha"])
     }
 
+    func testAppOutsideLaunchServicesAppears() throws {
+        // Simulator apps own a real bundle but never enter
+        // NSWorkspace.runningApplications, so only the bundle on disk names them.
+        let root = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("TapmixFixture-\(UUID().uuidString)")
+        let app = root.appendingPathComponent("SimTone.app")
+        try FileManager.default.createDirectory(at: app, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let plist = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0"><dict>
+        <key>CFBundlePackageType</key><string>APPL</string>
+        <key>CFBundleIdentifier</key><string>com.example.simtone</string>
+        <key>CFBundleDisplayName</key><string>Sim Tone</string>
+        </dict></plist>
+        """
+        try Data(plist.utf8).write(to: app.appendingPathComponent("Info.plist"))
+
+        let audio = process(
+            1,
+            pid: 42,
+            bundleID: "com.example.simtone",
+            executablePath: app.appendingPathComponent("SimTone").path
+        )
+        let result = groups(processes: [audio], running: [])
+
+        XCTAssertEqual(result.map(\.bundleID), ["com.example.simtone"])
+        XCTAssertEqual(result.first?.name, "Sim Tone")
+        XCTAssertEqual(result.first?.playingProcessObjectIDs, [1])
+    }
+
+    func testHelperBundleInsideHostIsStillHidden() {
+        let helper = process(
+            1,
+            pid: 10,
+            executablePath: "/Applications/Brave Browser.app/Contents/Frameworks/Brave Helper.app/Contents/MacOS/Brave Helper"
+        )
+        XCTAssertTrue(groups(processes: [helper], running: [braveHelper]).isEmpty)
+    }
+
     func testIdleAppWithoutLevelOrTapIsHidden() {
         let result = groups(
             processes: [process(1, pid: 5, bundleID: "com.brave.Browser", playing: false)],
